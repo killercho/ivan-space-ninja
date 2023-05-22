@@ -89,6 +89,8 @@ endfunc
 
 const s:ready_timeout = 1000
 
+const s:shuriken = '۞'
+
 const s:playerSprites = [[
             "\ First sprite - idle/up/down/ walking
             \ ' ◯ ',

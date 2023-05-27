@@ -40,7 +40,7 @@ func s:Intro()
                     \     props: [#{col: 8, length: 1, type: 'ninja_title'}]},
                     \   #{text: '       k          move up',
                     \     props: [#{col: 8, length: 1, type: 'ninja_title'}]},
-                    \   #{text: '    <Space>    shoot',
+                    \   #{text: '    <Space>       shoot',
                     \     props: [#{col: 5, length: 6, type: 'ninja_title'}]},
                     \   s:NoProp('  To shoot in a direction just look at that direction.'),
                     \   s:NoProp(''),

@@ -131,12 +131,16 @@ endfunc
 
 func s:Init()
     " highlight the different parts and sprites
-    " make different highlights depending on background color
-    if &bg == 'light'
-    " color differently
-    else
-        " normal color
-    endif
+    hi def NinjaVisor ctermbg=red guibg=red
+    hi def NinjaBelt ctermbg=red guibg=red
+    hi def NinjaBody ctermbg=gray guibg=gray
+    hi def NinjaShuriken ctermbg=yellow guibg=yellow
+
+    hi def EnemyHead1 ctermbg=green guibg=green
+    hi def EnemyHead2 ctermbg=blue guibg=blue
+    hi def EnemySmoke ctermbg=gray guibg=gray
+    hi def EnemyLegs ctermbg=black guibg=black
+
 endfunc
 
 func s:NoProp(text)

@@ -254,8 +254,8 @@ endfunc
 
 func s:MoveNinja(id, key)
     let pos = popup_getpos(a:id)
-    let move_col = 0
-    let move_line = 0
+    let move_col = pos.col
+    let move_line = pos.line
 
     if a:key == 'l' && pos.col < &columns - s:ninja_width
         let move_col = pos.col + s:ninja_speed

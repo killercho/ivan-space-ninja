@@ -4,10 +4,14 @@
 " use the highlighting to make better unicode characters
 
 const s:ready_timeout = 1000
+const s:ninja_zindex = 100
+const s:ninja_speed = 1
+const s:ninja_width = 3
+const s:ninja_height = 3
 
 const s:shuriken = '۞'
 
-const s:playerSprites = [[
+const s:ninjaSprites = [[
             "\ First sprite - idle/up/down/ walking
             \ ' ◯ ',
             \ '┍█┑',
@@ -42,7 +46,7 @@ const s:playerSprites = [[
             \ '   ',
             \ ' X ']]
 
-const s:playerSpriteMasks = [[
+const s:ninjaSpriteMasks = [[
             "\ First sprite - idle/up/down/ walking
             \ ' x ',
             \ 'xxx',
@@ -76,6 +80,8 @@ const s:playerSpriteMasks = [[
             \ '   ',
             \ '   ',
             \ ' x ']]
+
+let s:ninjaMasks = []
 
 const s:enemySprites = [[
             "\ First sprite
@@ -123,6 +129,25 @@ const s:enemySpriteMasks = [[
             \ '   ',
             \ 'xxx']]
 
+let s:enemyMasks = []
+
+func s:GetMask(l)
+    let mask = []
+    for r in range(len(a:l))
+        let s = 0
+        let e = -1
+        let l = a:l[r]
+
+        for c in range(len(l))
+            if l[c] == ' '
+                let e = c
+            elseif e >= s
+                call add(mask, [s + 1, e + 1, r + 1, r + 1])
+            endif
+        endfor
+    endfor
+    return mask
+endfunc
 
 func space_ninja#Start()
     call s:Init()
@@ -133,7 +158,7 @@ func s:Init()
     " highlight the different parts and sprites
     hi def NinjaVisor ctermbg=red guibg=red
     hi def NinjaBelt ctermbg=red guibg=red
-    hi def NinjaBody ctermbg=gray guibg=gray
+    hi def NinjaBody ctermbg=black guibg=black
     hi def NinjaShuriken ctermbg=yellow guibg=yellow
 
     hi def EnemyHead1 ctermbg=green guibg=green
@@ -141,6 +166,13 @@ func s:Init()
     hi def EnemySmoke ctermbg=gray guibg=gray
     hi def EnemyLegs ctermbg=black guibg=black
 
+    for i in s:ninjaSpriteMasks
+        call add(s:ninjaMasks, s:GetMask(i))
+    endfor
+
+    for i in s:enemySpriteMasks
+        call add(s:enemyMasks, s:GetMask(i))
+    endfor
 endfunc
 
 func s:NoProp(text)
@@ -205,10 +237,49 @@ endfunc
 func s:StartGame()
     " Begin game after the timeout of the intro
     call s:Clear()
+    let s:ninja = popup_create(s:ninjaSprites[0], #{
+                \ line: &lines / 2,
+                \ highlight: 'NinjaBody',
+                \ filter: function('s:MoveNinja'),
+                \ zindex: s:ninja_zindex,
+                \ mask: s:ninjaMasks[0],
+                \ mapping: 0
+                \ })
     echo 'Game is starting'
 endfunc
 
 func s:Clear()
     call popup_clear()
+endfunc
+
+func s:MoveNinja(id, key)
+    let pos = popup_getpos(a:id)
+    let move_col = 0
+    let move_line = 0
+
+    if a:key == 'l' && pos.col < &columns - s:ninja_width
+        let move_col = pos.col + s:ninja_speed
+    elseif a:key == 'h' && pos.col > s:ninja_width
+        let move_col = pos.col - s:ninja_speed
+    endif
+
+    if a:key == 'j' && pos.line < &lines - s:ninja_height
+        let move_line = pos.line + s:ninja_speed
+    elseif a:key == 'k' && pos.line > s:ninja_height
+        let move_line = pos.line - s:ninja_speed
+    endif
+
+    if move_line != 0 || move_col != 0
+        call popup_move(a:id, #{col: move_col, line: move_line})
+            endif
+
+        if a:key == ' '
+            echo 'Firing shuriken'
+        endif
+
+        if a:key == 'q' || a:key == '<Esc>'
+            call s:Clear()
+            echo 'Game quited'
+        endif
 endfunc
 

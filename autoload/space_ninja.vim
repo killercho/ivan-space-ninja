@@ -180,6 +180,7 @@ func s:NoProp(text)
 endfunc
 
 func s:Intro()
+    exec 'enew'
     hi NinjaTitle cterm=bold gui=bold
     call prop_type_delete('ninja_title')
     call prop_type_add('ninja_title', #{highlight: 'NinjaTitle'})

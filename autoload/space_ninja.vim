@@ -5,15 +5,24 @@
 
 const s:ready_timeout = 1000
 const s:ninja_zindex = 100
+const s:enemy_zindex = 90
 const s:ninja_speed = 1
 const s:ninja_width = 3
 const s:ninja_height = 3
-const s:ninja_anim = 100
+const s:ninja_anim_timeout = 100
+
+const s:score_per_kill = 20
 
 const s:shuriken = '۞'
 
 "TODO: Make better animations for walking. Maybe include a middle one between
 "the idle and a side walk
+
+"TODO: Block other mappings
+
+"TODO: Fix the top left of the sprites not being colored
+
+"TODO: Add different colors to the different parts of the sprites
 
 const s:ninjaSprites = [[
             "\ First sprite - idle/up/down/ walking
@@ -259,6 +268,9 @@ func s:StartGame()
                 \ })
     echo 'Game is starting'
     call s:AnimateNinja(s:ninja, 0)
+
+    let s:enemies_left = 0
+    call s:SpawnEnemy(8, 7, 'EnemyHead1')
 endfunc
 
 func s:Clear()
@@ -282,7 +294,7 @@ func s:AnimateNinja(id, state)
         call popup_settext(a:id, s:ninjaSprites[1])
         call popup_setoptions(a:id, #{mask: s:ninjaMasks[1]})
             endif
-        call timer_start(s:ninja_anim, {x -> s:AnimateNinja(a:id, a:state == 0 ? 1 : 0)})
+        call timer_start(s:ninja_anim_timeout, {x -> s:AnimateNinja(a:id, a:state == 0 ? 1 : 0)})
 endfunc
 
 func s:MoveNinja(id, key)
@@ -323,5 +335,18 @@ func s:MoveNinja(id, key)
         call s:Clear()
         echo 'Game quited'
     endif
+endfunc
+
+func s:SpawnEnemy(line, col, color)
+    let enemy_id = popup_create(s:enemySprites[0], #{
+                \ line: a:line,
+                \ col: a:col,
+                \ highlight: a:color,
+                \ mask: s:enemyMasks[0],
+                \ fixed: 1,
+                \ zindex: s:enemy_zindex,
+                \ wrap: 0
+                \ })
+    let s:enemies_left += 1
 endfunc
 

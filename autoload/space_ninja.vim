@@ -8,8 +8,12 @@ const s:ninja_zindex = 100
 const s:ninja_speed = 1
 const s:ninja_width = 3
 const s:ninja_height = 3
+const s:ninja_anim = 100
 
 const s:shuriken = '۞'
+
+"TODO: Make better animations for walking. Maybe include a middle one between
+"the idle and a side walk
 
 const s:ninjaSprites = [[
             "\ First sprite - idle/up/down/ walking
@@ -143,8 +147,15 @@ func s:GetMask(l)
                 let e = c
             elseif e >= s
                 call add(mask, [s + 1, e + 1, r + 1, r + 1])
+                let s = c + 100
+                let e = c
+            else
+                let s = c + 1
             endif
         endfor
+        if e >= s
+            call add(mask, [s + 1, e + 1, r + 1, r + 1])
+        endif
     endfor
     return mask
 endfunc
@@ -247,21 +258,46 @@ func s:StartGame()
                 \ mapping: 0
                 \ })
     echo 'Game is starting'
+    call s:AnimateNinja(s:ninja, 0)
 endfunc
 
 func s:Clear()
     call popup_clear()
 endfunc
 
+func s:AnimateNinja(id, state)
+    "State changes between 1 and 0 for moving -> idle -> moving
+    "Starting with moving
+    let direction = getwinvar(a:id, 'direction')
+    if direction == 0 || a:state == 0
+        "Idling
+        call popup_settext(a:id, s:ninjaSprites[0])
+        call popup_setoptions(a:id, #{mask: s:ninjaMasks[0]})
+            elseif direction == 1
+        "Moving left
+        call popup_settext(a:id, s:ninjaSprites[2])
+        call popup_setoptions(a:id, #{mask: s:ninjaMasks[2]})
+            elseif direction == 2
+        "Moving right
+        call popup_settext(a:id, s:ninjaSprites[1])
+        call popup_setoptions(a:id, #{mask: s:ninjaMasks[1]})
+            endif
+        call timer_start(s:ninja_anim, {x -> s:AnimateNinja(a:id, a:state == 0 ? 1 : 0)})
+endfunc
+
 func s:MoveNinja(id, key)
     let pos = popup_getpos(a:id)
     let move_col = pos.col
     let move_line = pos.line
+    let left_anim = 0
+    let right_anim = 0
 
     if a:key == 'l' && pos.col < &columns - s:ninja_width
         let move_col = pos.col + s:ninja_speed
+        let left_anim = 1
     elseif a:key == 'h' && pos.col > s:ninja_width
         let move_col = pos.col - s:ninja_speed
+        let right_anim = 1
     endif
 
     if a:key == 'j' && pos.line < &lines - s:ninja_height
@@ -272,15 +308,20 @@ func s:MoveNinja(id, key)
 
     if move_line != 0 || move_col != 0
         call popup_move(a:id, #{col: move_col, line: move_line})
+            if left_anim == 1
+        call setwinvar(a:id, 'direction', 1)
+            elseif right_anim == 1
+                call setwinvar(a:id, 'direction', 2)
+            else
+                call setwinvar(a:id, 'direction', 0)
             endif
+    endif
 
-        if a:key == ' '
-            echo 'Firing shuriken'
-        endif
-
-        if a:key == 'q' || a:key == '<Esc>'
-            call s:Clear()
-            echo 'Game quited'
-        endif
+    if a:key == ' '
+        echo 'Firing shuriken'
+    elseif a:key == 'q' || a:key == '<Esc>'
+        call s:Clear()
+        echo 'Game quited'
+    endif
 endfunc
 

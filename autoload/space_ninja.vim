@@ -11,7 +11,11 @@ const s:ninja_width = 3
 const s:ninja_height = 3
 const s:ninja_anim_timeout = 100
 
+const s:start_spawn_timer = 150
+const s:spawn_decrem = 5
+
 const s:score_per_kill = 20
+const s:enemies_per_level = 20
 
 const s:shuriken = '۞'
 
@@ -173,7 +177,6 @@ func space_ninja#Start()
 endfunc
 
 func s:Init()
-    " highlight the different parts and sprites
     hi def NinjaBody ctermbg=black guibg=black
     hi def NinjaShuriken ctermbg=yellow guibg=yellow
 
@@ -187,6 +190,9 @@ func s:Init()
     for i in s:enemySpriteMasks
         call add(s:enemyMasks, s:GetMask(i))
     endfor
+
+    let s:spawn_timer = s:start_spawn_timer
+    let s:enemies_left = 0
 endfunc
 
 func s:NoProp(text)
@@ -262,9 +268,8 @@ func s:StartGame()
                 \ })
     echo 'Game is starting'
     call s:AnimateNinja(s:ninja, 0)
+    call s:SpawnEnemiesFact()
 
-    let s:enemies_left = 0
-    call s:SpawnEnemy(8, 7, 'EnemyCol1')
 endfunc
 
 func s:Clear()
@@ -329,6 +334,25 @@ func s:MoveNinja(id, key)
         call s:Clear()
         echo 'Game quited'
     endif
+endfunc
+
+func s:SpawnEnemiesFact()
+    if s:spawn_timer <= 0
+        return
+    endif
+    let seed = srand()
+    let rand_line = rand(seed) % &lines
+    let rand_col = rand(seed) % &columns
+    let rand_color_num = rand(seed) % 2
+    if rand_color_num == 0
+        let rand_color = 'EnemyCol1'
+    elseif rand_color_num == 1
+        let rand_color = 'EnemyCol2'
+    endif
+    call s:SpawnEnemy(rand_line, rand_col, rand_color)
+    let s:enemies_left += 1
+    let s:spawn_timer -= s:spawn_decrem
+    call timer_start(s:spawn_timer, { -> s:SpawnEnemiesFact()})
 endfunc
 
 func s:SpawnEnemy(line, col, color)

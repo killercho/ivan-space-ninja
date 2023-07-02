@@ -22,8 +22,6 @@ const s:shuriken = '۞'
 
 "TODO: Fix the top left of the sprites not being colored
 
-"TODO: Add different colors to the different parts of the sprites
-
 const s:ninjaSprites = [[
             "\ First sprite - idle/up/down/ walking
             \ ' ◯ ',
@@ -176,15 +174,11 @@ endfunc
 
 func s:Init()
     " highlight the different parts and sprites
-    hi def NinjaVisor ctermbg=red guibg=red
-    hi def NinjaBelt ctermbg=red guibg=red
     hi def NinjaBody ctermbg=black guibg=black
     hi def NinjaShuriken ctermbg=yellow guibg=yellow
 
-    hi def EnemyHead1 ctermbg=green guibg=green
-    hi def EnemyHead2 ctermbg=blue guibg=blue
-    hi def EnemySmoke ctermbg=gray guibg=gray
-    hi def EnemyLegs ctermbg=black guibg=black
+    hi def EnemyCol1 ctermbg=green guibg=green
+    hi def EnemyCol2 ctermbg=blue guibg=blue
 
     for i in s:ninjaSpriteMasks
         call add(s:ninjaMasks, s:GetMask(i))
@@ -270,7 +264,7 @@ func s:StartGame()
     call s:AnimateNinja(s:ninja, 0)
 
     let s:enemies_left = 0
-    call s:SpawnEnemy(8, 7, 'EnemyHead1')
+    call s:SpawnEnemy(8, 7, 'EnemyCol1')
 endfunc
 
 func s:Clear()

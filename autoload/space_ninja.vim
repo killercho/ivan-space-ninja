@@ -5,6 +5,7 @@
 
 const s:ninja_zindex = 100
 const s:enemy_zindex = 90
+const s:shuriken_zindex = 110
 
 const s:ready_timeout = 1000
 
@@ -12,6 +13,9 @@ const s:ninja_speed = 1
 const s:ninja_width = 3
 const s:ninja_height = 3
 const s:ninja_anim_timeout = 100
+
+const s:shuriken_cd = 500
+const s:shuriken_speed = 2
 
 const s:start_spawn_timer = 2000
 const s:spawn_decrem = 10
@@ -28,17 +32,22 @@ const s:shoot = ' '
 const s:quit = 'q'
 const s:start = 's'
 
+"TODO: Add a timer? to return the ability to shoot to the player
+
 "TODO: Fix animations not ending when a key is not pressed
 
 "TODO: Make better animations for walking. Maybe include a middle one between
 "the idle and a side walk
+
+"TODO: Change the highlighting of the enemies and the shuriken
 
 "TODO: Block other mappings
 
 "TODO: Fix the top left of the sprites not being colored
 
 "Sprites
-const s:shuriken = '۞'
+"const s:shuriken = '۞'
+const s:shuriken = '*'
 
 const s:ninjaSprites = [[
             "\ First sprite - idle/up/down/ walking
@@ -208,6 +217,9 @@ func s:Init()
     let s:spawn_timer = s:start_spawn_timer
     let s:enemies_left = 0
     let s:spawn_enemies = 1
+
+    " 0 -> facing down, 1 -> left, 2 -> up, 3 -> right
+    let s:last_facing = 0
 endfunc
 
 func s:NoProp(text)
@@ -253,13 +265,13 @@ func s:Intro()
 endfunc
 
 func s:IntroFilter(id, key)
-    if a:key == 's' || a:key == 'S'
+    if a:key == s:start || a:key == toupper(s:start)
         call s:Clear()
         let s:score = 0
         let s:ready = popup_create('IVAN GO!', #{border: [], padding:[2, 4, 2, 4]})
             echo 'Game started!'
         call timer_start(s:ready_timeout, { -> s:StartGame()})
-    elseif a:key == 'q' || a:key == 'Q'
+    elseif a:key == s:quit || a:key == toupper(s:quit)
         call s:Clear()
         echo 'Game quited!'
     endif
@@ -272,9 +284,8 @@ func s:IntroClose(id, res)
 endfunc
 
 func s:StartGame()
-    " Begin game after the timeout of the intro
     call s:Clear()
-    let s:ninja = popup_create(s:ninjaSprites[0], #{
+    let s:ninja_id = popup_create(s:ninjaSprites[0], #{
                 \ line: &lines / 2,
                 \ highlight: 'NinjaBody',
                 \ filter: function('s:HandleInput'),
@@ -283,7 +294,7 @@ func s:StartGame()
                 \ mapping: 0
                 \ })
     echo 'Game is starting'
-    call s:AnimateNinja(s:ninja, 0)
+    call s:AnimateNinja(s:ninja_id, 0)
     call s:SpawnEnemiesFact()
 
 endfunc
@@ -291,6 +302,7 @@ endfunc
 func s:Clear()
     call popup_clear()
     let s:spawn_timer = s:start_spawn_timer
+    let s:shuriken_avaliable = 1
 endfunc
 
 func s:AnimateNinja(id, state)
@@ -335,15 +347,19 @@ func s:MoveNinja(id, key)
     if a:key == s:move_right && pos.col < &columns - s:ninja_width
         let move_col = pos.col + s:ninja_speed
         let left_anim = 1
+        let s:last_facing = 3
     elseif a:key == s:move_left && pos.col > s:ninja_width
         let move_col = pos.col - s:ninja_speed
         let right_anim = 1
+        let s:last_facing = 1
     endif
 
     if a:key == s:move_down && pos.line < &lines - s:ninja_height
         let move_line = pos.line + s:ninja_speed
+        let s:last_facing = 0
     elseif a:key == s:move_up && pos.line > s:ninja_height
         let move_line = pos.line - s:ninja_speed
+        let s:last_facing = 2
     endif
 
     if move_line != 0 || move_col != 0
@@ -358,8 +374,32 @@ func s:MoveNinja(id, key)
     endif
 
     if a:key == s:shoot
-        echo 'Firing shuriken'
+        call s:FireShuriken(pos.line, pos.col)
     endif
+endfunc
+
+func s:FireShuriken(line, col)
+    if s:shuriken_avaliable == 0
+        return
+    endif
+    let correction_cols = s:last_facing == 1 ? -1 : s:last_facing == 3 ? 1 : 0
+    let correction_lines = s:last_facing == 2 ? -1 : s:last_facing == 0 ? 1 : 0
+    let spawn_col = a:col + 1 + correction_cols
+    let spawn_line = a:line + 1 + correction_lines
+    let shuriken_id = popup_create(s:shuriken, #{
+                \ col: spawn_col,
+                \ line: spawn_line,
+                \ highlight: 'NinjaShuriken',
+                \ zindex: s:shuriken_zindex,
+                \ })
+    call s:MoveShuriken(shuriken_id, s:last_facing)
+endfunc
+
+func s:MoveShuriken(id, direction)
+    " call timer_start(s:shuriken_move_delay, {x ->
+    " s:MoveShuriken(a:id, a:direction)}) - at the end of the function
+    " this way the function is going to repeat itself
+    " To not repeat add an if to check if it still exists
 endfunc
 
 func s:SpawnEnemiesFact()

@@ -273,7 +273,6 @@ endfunc
 func s:IntroFilter(id, key)
     if a:key == s:start || a:key == toupper(s:start)
         call s:Clear()
-        let s:score = 0
         let s:ready = popup_create('IVAN GO!', #{border: [], padding:[2, 4, 2, 4]})
             echo 'Game started!'
         call timer_start(s:ready_timeout, { -> s:StartGame()})
@@ -291,6 +290,7 @@ endfunc
 
 func s:StartGame()
     call s:Clear()
+    let s:score = 0
     let s:ninja_id = popup_create(s:ninja_sprites[0], #{
                 \ line: &lines / 2,
                 \ highlight: 'NinjaBody',
@@ -302,6 +302,11 @@ func s:StartGame()
     echo 'Game is starting'
     call s:AnimateNinja(s:ninja_id, 0)
     call s:SpawnEnemiesFact()
+    let s:score_popup_id = popup_create(s:score, #{
+                \ line: 3,
+                \ col: 3,
+                \ zindex: 300,
+                \ })
 
 endfunc
 
@@ -309,6 +314,7 @@ func s:Clear()
     call popup_clear()
     let s:spawn_timer = s:start_spawn_timer
     let s:shuriken_avaliable = 1
+    let s:score = 0
 endfunc
 
 func s:AnimateNinja(id, state)
@@ -421,7 +427,12 @@ func s:MoveShuriken(x, id, direction)
         let popup_on_location = popup_locate(new_line, new_col)
         if popup_on_location != 0 && popup_on_location != a:id
             call s:KillEnemy(popup_on_location, 0)
-            "Increment score here ...
+            let s:score += s:score_per_kill
+            call popup_settext(s:score_popup_id, s:score)
+            call popup_setoptions(s:score_popup_id, #{
+                        \ line: 3,
+                        \ col: 3,
+                        \ })
             call popup_close(a:id)
         endif
     endif

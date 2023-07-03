@@ -5,7 +5,7 @@
 
 const s:ninja_zindex = 100
 const s:enemy_zindex = 90
-const s:shuriken_zindex = 110
+const s:shuriken_zindex = 80
 
 const s:ready_timeout = 1000
 
@@ -15,7 +15,8 @@ const s:ninja_height = 3
 const s:ninja_anim_timeout = 100
 
 const s:shuriken_cd = 500
-const s:shuriken_speed = 2
+const s:shuriken_speed = 1
+const s:shuriken_move_delay = 30
 
 const s:start_spawn_timer = 2000
 const s:spawn_decrem = 10
@@ -34,7 +35,10 @@ const s:start = 's'
 
 "TODO: Add a timer? to return the ability to shoot to the player
 
-"TODO: Fix animations not ending when a key is not pressed
+"TODO: Add a score system
+
+"TODO: Fix animations not ending when a key is not pressed (maybe use
+"timer_stop)
 
 "TODO: Make better animations for walking. Maybe include a middle one between
 "the idle and a side walk
@@ -392,14 +396,39 @@ func s:FireShuriken(line, col)
                 \ highlight: 'NinjaShuriken',
                 \ zindex: s:shuriken_zindex,
                 \ })
-    call s:MoveShuriken(shuriken_id, s:last_facing)
+    call s:MoveShuriken(0, shuriken_id, s:last_facing)
 endfunc
 
-func s:MoveShuriken(id, direction)
-    " call timer_start(s:shuriken_move_delay, {x ->
-    " s:MoveShuriken(a:id, a:direction)}) - at the end of the function
-    " this way the function is going to repeat itself
-    " To not repeat add an if to check if it still exists
+func s:MoveShuriken(x, id, direction)
+    let pos = popup_getpos(a:id)
+    if pos == {}
+        call timer_stop(a:x)
+        return
+    endif
+    if pos.line <= 2 || pos.line > &lines - 3 || pos.col <= 2 || pos.col > &columns - 2
+        call popup_close(a:id)
+        call timer_stop(a:x)
+        return
+    else
+        let new_col = pos.col + (a:direction == 1 ? -s:shuriken_speed : a:direction == 3 ? s:shuriken_speed : 0)
+        let new_line = pos.line + (a:direction == 2 ? -s:shuriken_speed : a:direction == 0 ? s:shuriken_speed : 0)
+        call popup_move(a:id, #{
+                    \ col: new_col,
+                    \ line: new_line,
+                    \ })
+        let popup_on_location = popup_locate(new_line, new_col)
+        if popup_on_location != 0 && popup_on_location != a:id
+            call s:KillEnemy(popup_on_location, 3)
+            "Increment score here ...
+            call popup_close(a:id)
+        endif
+    endif
+
+    call timer_start(s:shuriken_move_delay, {x -> s:MoveShuriken(x, a:id, a:direction)})
+endfunc
+
+func s:KillEnemy(id, state)
+    echo 'Enemy killed'
 endfunc
 
 func s:SpawnEnemiesFact()

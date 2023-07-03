@@ -18,6 +18,8 @@ const s:shuriken_cd = 500
 const s:shuriken_speed = 1
 const s:shuriken_move_delay = 30
 
+const s:enemy_death_delay = 100
+
 const s:start_spawn_timer = 2000
 const s:spawn_decrem = 10
 
@@ -53,7 +55,7 @@ const s:start = 's'
 "const s:shuriken = '۞'
 const s:shuriken = '*'
 
-const s:ninjaSprites = [[
+const s:ninja_sprites = [[
             "\ First sprite - idle/up/down/ walking
             \ ' ◯ ',
             \ '┍█┑',
@@ -88,7 +90,7 @@ const s:ninjaSprites = [[
             \ '   ',
             \ ' X ']]
 
-const s:ninjaSpriteMasks = [[
+const s:ninja_sprite_masks = [[
             "\ First sprite - idle/up/down/ walking
             \ ' x ',
             \ 'xxx',
@@ -123,9 +125,9 @@ const s:ninjaSpriteMasks = [[
             \ '   ',
             \ ' x ']]
 
-let s:ninjaMasks = []
+let s:ninja_masks = []
 
-const s:enemySprites = [[
+const s:enemy_sprites = [[
             "\ First sprite
             \ ' ◈ ',
             \ '▀▀▀',
@@ -148,7 +150,7 @@ const s:enemySprites = [[
             \ '   ',
             \ '___']]
 
-const s:enemySpriteMasks = [[
+const s:enemy_sprite_masks = [[
             "\ First sprite
             \ ' x ',
             \ 'xxx',
@@ -171,7 +173,7 @@ const s:enemySpriteMasks = [[
             \ '   ',
             \ 'xxx']]
 
-let s:enemyMasks = []
+let s:enemy_masks = []
 
 func s:GetMask(l)
     let mask = []
@@ -210,12 +212,12 @@ func s:Init()
     hi def EnemyCol1 ctermbg=green guibg=green
     hi def EnemyCol2 ctermbg=blue guibg=blue
 
-    for i in s:ninjaSpriteMasks
-        call add(s:ninjaMasks, s:GetMask(i))
+    for i in s:ninja_sprite_masks
+        call add(s:ninja_masks, s:GetMask(i))
     endfor
 
-    for i in s:enemySpriteMasks
-        call add(s:enemyMasks, s:GetMask(i))
+    for i in s:enemy_sprite_masks
+        call add(s:enemy_masks, s:GetMask(i))
     endfor
 
     let s:spawn_timer = s:start_spawn_timer
@@ -289,12 +291,12 @@ endfunc
 
 func s:StartGame()
     call s:Clear()
-    let s:ninja_id = popup_create(s:ninjaSprites[0], #{
+    let s:ninja_id = popup_create(s:ninja_sprites[0], #{
                 \ line: &lines / 2,
                 \ highlight: 'NinjaBody',
                 \ filter: function('s:HandleInput'),
                 \ zindex: s:ninja_zindex,
-                \ mask: s:ninjaMasks[0],
+                \ mask: s:ninja_masks[0],
                 \ mapping: 0
                 \ })
     echo 'Game is starting'
@@ -313,16 +315,16 @@ func s:AnimateNinja(id, state)
     let direction = getwinvar(a:id, 'direction')
     if direction == 0 || a:state == 0
         "Idling
-        call popup_settext(a:id, s:ninjaSprites[0])
-        call popup_setoptions(a:id, #{mask: s:ninjaMasks[0]})
+        call popup_settext(a:id, s:ninja_sprites[0])
+        call popup_setoptions(a:id, #{mask: s:ninja_masks[0]})
             elseif direction == 1
         "Moving left
-        call popup_settext(a:id, s:ninjaSprites[2])
-        call popup_setoptions(a:id, #{mask: s:ninjaMasks[2]})
+        call popup_settext(a:id, s:ninja_sprites[2])
+        call popup_setoptions(a:id, #{mask: s:ninja_masks[2]})
             elseif direction == 2
         "Moving right
-        call popup_settext(a:id, s:ninjaSprites[1])
-        call popup_setoptions(a:id, #{mask: s:ninjaMasks[1]})
+        call popup_settext(a:id, s:ninja_sprites[1])
+        call popup_setoptions(a:id, #{mask: s:ninja_masks[1]})
             endif
         call timer_start(s:ninja_anim_timeout, {x -> s:AnimateNinja(a:id, a:state == 0 ? 1 : 0)})
 endfunc
@@ -334,7 +336,7 @@ func s:HandleInput(id, key)
                 \ a:key == s:move_left ||
                 \ a:key == s:shoot
         call s:MoveNinja(a:id, a:key)
-    elseif a:key == s:quit || a:key == '<Esc>'
+    elseif a:key == s:quit || a:key == toupper(s:quit)
         call s:Clear()
         let s:spawn_enemies = 0
         echo 'Game quited'
@@ -418,7 +420,7 @@ func s:MoveShuriken(x, id, direction)
                     \ })
         let popup_on_location = popup_locate(new_line, new_col)
         if popup_on_location != 0 && popup_on_location != a:id
-            call s:KillEnemy(popup_on_location, 3)
+            call s:KillEnemy(popup_on_location, 0)
             "Increment score here ...
             call popup_close(a:id)
         endif
@@ -428,7 +430,25 @@ func s:MoveShuriken(x, id, direction)
 endfunc
 
 func s:KillEnemy(id, state)
-    echo 'Enemy killed'
+    let pos = popup_getpos(a:id)
+    if pos == {}
+        return
+    endif
+    if a:state == 3
+        let s:enemies_left -= 1
+        call popup_close(a:id)
+        if s:enemies_left == 0
+            echo 'Game over!'
+        endif
+        return
+    endif
+    call popup_settext(a:id, s:enemy_sprites[a:state + 2])
+    call popup_setoptions(a:id, #{
+                \ mask: s:enemy_masks[a:state + 2],
+                \ line: pos.line,
+                \ col: pos.col,
+                \ })
+    call timer_start(s:enemy_death_delay, {x -> s:KillEnemy(a:id, a:state + 1)})
 endfunc
 
 func s:SpawnEnemiesFact()
@@ -456,11 +476,11 @@ func s:SpawnEnemiesFact()
 endfunc
 
 func s:SpawnEnemy(line, col, color)
-    let enemy_id = popup_create(s:enemySprites[0], #{
+    let enemy_id = popup_create(s:enemy_sprites[0], #{
                 \ line: a:line,
                 \ col: a:col,
                 \ highlight: a:color,
-                \ mask: s:enemyMasks[0],
+                \ mask: s:enemy_masks[0],
                 \ fixed: 1,
                 \ zindex: s:enemy_zindex,
                 \ wrap: 0

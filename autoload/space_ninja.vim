@@ -3,21 +3,32 @@
 "
 " use the highlighting to make better unicode characters
 
-const s:ready_timeout = 1000
 const s:ninja_zindex = 100
 const s:enemy_zindex = 90
+
+const s:ready_timeout = 1000
+
 const s:ninja_speed = 1
 const s:ninja_width = 3
 const s:ninja_height = 3
 const s:ninja_anim_timeout = 100
 
-const s:start_spawn_timer = 150
-const s:spawn_decrem = 5
+const s:start_spawn_timer = 2000
+const s:spawn_decrem = 10
 
 const s:score_per_kill = 20
 const s:enemies_per_level = 20
 
-const s:shuriken = '۞'
+"Binds
+const s:move_left = 'h'
+const s:move_right = 'l'
+const s:move_up = 'k'
+const s:move_down = 'j'
+const s:shoot = ' '
+const s:quit = 'q'
+const s:start = 's'
+
+"TODO: Fix animations not ending when a key is not pressed
 
 "TODO: Make better animations for walking. Maybe include a middle one between
 "the idle and a side walk
@@ -25,6 +36,9 @@ const s:shuriken = '۞'
 "TODO: Block other mappings
 
 "TODO: Fix the top left of the sprites not being colored
+
+"Sprites
+const s:shuriken = '۞'
 
 const s:ninjaSprites = [[
             "\ First sprite - idle/up/down/ walking
@@ -193,6 +207,7 @@ func s:Init()
 
     let s:spawn_timer = s:start_spawn_timer
     let s:enemies_left = 0
+    let s:spawn_enemies = 1
 endfunc
 
 func s:NoProp(text)
@@ -204,36 +219,37 @@ func s:Intro()
     hi NinjaTitle cterm=bold gui=bold
     call prop_type_delete('ninja_title')
     call prop_type_add('ninja_title', #{highlight: 'NinjaTitle'})
-        let s:intro_popup = popup_create([
-                    \   #{text: '       The robots are coming to get you Ivan!',
-                    \     props: [#{col: 8, length: 37, type: 'ninja_title'}]},
-                    \   s:NoProp(''),
-                    \   s:NoProp('  To play you need to move and shoot...'),
-                    \   s:NoProp('  Moving uses the normal movement keybinds in vim:'),
-                    \   #{text: '       h          move right',
-                    \     props: [#{col: 8, length: 1, type: 'ninja_title'}]},
-                    \   #{text: '       l          move left',
-                    \     props: [#{col: 8, length: 1, type: 'ninja_title'}]},
-                    \   #{text: '       j          move down',
-                    \     props: [#{col: 8, length: 1, type: 'ninja_title'}]},
-                    \   #{text: '       k          move up',
-                    \     props: [#{col: 8, length: 1, type: 'ninja_title'}]},
-                    \   #{text: '    <Space>       shoot',
-                    \     props: [#{col: 5, length: 6, type: 'ninja_title'}]},
-                    \   s:NoProp('  To shoot in a direction just look at that direction.'),
-                    \   s:NoProp(''),
-                    \   #{text: ' To start the game press   s   or press    q   to leave. ',
-                    \     props: [#{col: 27, length: 1, type: 'ninja_title'},
-                    \             #{col: 43, length: 1, type: 'ninja_title'}]},
-                    \ ], #{
-                    \   filter: function('s:IntroFilter'),
-                    \   callback: function('s:IntroClose'),
-                    \   border: [],
-                    \   padding: [],
-                    \   mapping: 0,
-                    \   drag: 1,
-                    \   close: 'button',
-                    \   })
+        let shoot_text = s:shoot == ' ' ? '<Space>' : a:shoot
+    let s:intro_popup = popup_create([
+                \   #{text: '       The robots are coming to get you Ivan!',
+                \     props: [#{col: 8, length: 37, type: 'ninja_title'}]},
+                \   s:NoProp(''),
+                \   s:NoProp('  To play you need to move and shoot...'),
+                \   s:NoProp('  Moving uses the normal movement keybinds in vim:'),
+                \   #{text: '       ' .. s:move_right .. '          move right',
+                \     props: [#{col: 8, length: 1, type: 'ninja_title'}]},
+                \   #{text: '       ' .. s:move_left .. '          move left',
+                \     props: [#{col: 8, length: 1, type: 'ninja_title'}]},
+                \   #{text: '       ' .. s:move_down .. '          move down',
+                \     props: [#{col: 8, length: 1, type: 'ninja_title'}]},
+                \   #{text: '       ' .. s:move_up .. '          move up',
+                \     props: [#{col: 8, length: 1, type: 'ninja_title'}]},
+                \   #{text: '    ' .. shoot_text .. '       shoot',
+                \     props: [#{col: 5, length: 6, type: 'ninja_title'}]},
+                \   s:NoProp('  To shoot in a direction just look at that direction.'),
+                \   s:NoProp(''),
+                \   #{text: ' To start the game press   ' .. s:start .. '   or press    ' .. s:quit .. '   to leave. ',
+                \     props: [#{col: 27, length: 1, type: 'ninja_title'},
+                \             #{col: 43, length: 1, type: 'ninja_title'}]},
+                \ ], #{
+                \   filter: function('s:IntroFilter'),
+                \   callback: function('s:IntroClose'),
+                \   border: [],
+                \   padding: [],
+                \   mapping: 0,
+                \   drag: 1,
+                \   close: 'button',
+                \   })
 endfunc
 
 func s:IntroFilter(id, key)
@@ -261,7 +277,7 @@ func s:StartGame()
     let s:ninja = popup_create(s:ninjaSprites[0], #{
                 \ line: &lines / 2,
                 \ highlight: 'NinjaBody',
-                \ filter: function('s:MoveNinja'),
+                \ filter: function('s:HandleInput'),
                 \ zindex: s:ninja_zindex,
                 \ mask: s:ninjaMasks[0],
                 \ mapping: 0
@@ -274,11 +290,10 @@ endfunc
 
 func s:Clear()
     call popup_clear()
+    let s:spawn_timer = s:start_spawn_timer
 endfunc
 
 func s:AnimateNinja(id, state)
-    "State changes between 1 and 0 for moving -> idle -> moving
-    "Starting with moving
     let direction = getwinvar(a:id, 'direction')
     if direction == 0 || a:state == 0
         "Idling
@@ -296,6 +311,20 @@ func s:AnimateNinja(id, state)
         call timer_start(s:ninja_anim_timeout, {x -> s:AnimateNinja(a:id, a:state == 0 ? 1 : 0)})
 endfunc
 
+func s:HandleInput(id, key)
+    if a:key == s:move_up ||
+                \ a:key == s:move_down ||
+                \ a:key == s:move_right ||
+                \ a:key == s:move_left ||
+                \ a:key == s:shoot
+        call s:MoveNinja(a:id, a:key)
+    elseif a:key == s:quit || a:key == '<Esc>'
+        call s:Clear()
+        let s:spawn_enemies = 0
+        echo 'Game quited'
+    endif
+endfunc
+
 func s:MoveNinja(id, key)
     let pos = popup_getpos(a:id)
     let move_col = pos.col
@@ -303,17 +332,17 @@ func s:MoveNinja(id, key)
     let left_anim = 0
     let right_anim = 0
 
-    if a:key == 'l' && pos.col < &columns - s:ninja_width
+    if a:key == s:move_right && pos.col < &columns - s:ninja_width
         let move_col = pos.col + s:ninja_speed
         let left_anim = 1
-    elseif a:key == 'h' && pos.col > s:ninja_width
+    elseif a:key == s:move_left && pos.col > s:ninja_width
         let move_col = pos.col - s:ninja_speed
         let right_anim = 1
     endif
 
-    if a:key == 'j' && pos.line < &lines - s:ninja_height
+    if a:key == s:move_down && pos.line < &lines - s:ninja_height
         let move_line = pos.line + s:ninja_speed
-    elseif a:key == 'k' && pos.line > s:ninja_height
+    elseif a:key == s:move_up && pos.line > s:ninja_height
         let move_line = pos.line - s:ninja_speed
     endif
 
@@ -328,21 +357,23 @@ func s:MoveNinja(id, key)
             endif
     endif
 
-    if a:key == ' '
+    if a:key == s:shoot
         echo 'Firing shuriken'
-    elseif a:key == 'q' || a:key == '<Esc>'
-        call s:Clear()
-        echo 'Game quited'
     endif
 endfunc
 
 func s:SpawnEnemiesFact()
-    if s:spawn_timer <= 0
+    if s:spawn_timer <= 0 || s:spawn_enemies == 0
         return
     endif
     let seed = srand()
-    let rand_line = rand(seed) % &lines
-    let rand_col = rand(seed) % &columns
+    let correct_placement = 0
+    while correct_placement == 0
+        let rand_line = rand(seed) % &lines
+        let correct_placement = rand_line > 5 && rand_line < &lines - 5 ? 1 : 0
+        let rand_col = rand(seed) % &columns
+        let correct_placement = rand_col > 5 && rand_col < &columns - 5 ? 1 : 0
+    endwhile
     let rand_color_num = rand(seed) % 2
     if rand_color_num == 0
         let rand_color = 'EnemyCol1'

@@ -35,6 +35,10 @@ const s:shoot = ' '
 const s:quit = 'q'
 const s:start = 's'
 
+"TODO: BUG: when the game starts if the buffer is in use it makes the text as
+"a popup and errors every time you try to shoot since it collides with the
+"text
+
 "TODO: Add a timer? to return the ability to shoot to the player
 
 "TODO: Add a score system
@@ -206,6 +210,11 @@ func space_ninja#Start()
 endfunc
 
 func s:Init()
+    if filereadable(bufname('%'))
+        exec 'w'
+    endif
+    exec 'enew'
+
     hi def NinjaBody ctermbg=black guibg=black
     hi def NinjaShuriken ctermbg=yellow guibg=yellow
 
@@ -366,10 +375,10 @@ func s:MoveNinja(id, key)
         let s:last_facing = 1
     endif
 
-    if a:key == s:move_down && pos.line < &lines - s:ninja_height
+    if a:key == s:move_down && pos.line < &lines - s:ninja_height - 1
         let move_line = pos.line + s:ninja_speed
         let s:last_facing = 0
-    elseif a:key == s:move_up && pos.line > s:ninja_height
+    elseif a:key == s:move_up && pos.line > s:ninja_height - 1
         let move_line = pos.line - s:ninja_speed
         let s:last_facing = 2
     endif
@@ -414,8 +423,8 @@ func s:MoveShuriken(x, id, direction)
         return
     endif
     if pos.line <= 2 || pos.line > &lines - 3 || pos.col <= 2 || pos.col > &columns - 2
-        call popup_close(a:id)
         call timer_stop(a:x)
+        call popup_close(a:id)
         return
     else
         let new_col = pos.col + (a:direction == 1 ? -s:shuriken_speed : a:direction == 3 ? s:shuriken_speed : 0)
@@ -470,9 +479,9 @@ func s:SpawnEnemiesFact()
     let correct_placement = 0
     while correct_placement == 0
         let rand_line = rand(seed) % &lines
-        let correct_placement = rand_line > 5 && rand_line < &lines - 5 ? 1 : 0
+        let correct_placement = rand_line > s:ninja_height - 1 && rand_line < &lines - s:ninja_height - 1 ? 1 : 0
         let rand_col = rand(seed) % &columns
-        let correct_placement = rand_col > 5 && rand_col < &columns - 5 ? 1 : 0
+        let correct_placement += rand_col > s:ninja_width && rand_col < &columns - s:ninja_width ? 1 : 0
     endwhile
     let rand_color_num = rand(seed) % 2
     if rand_color_num == 0

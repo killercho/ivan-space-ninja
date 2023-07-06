@@ -37,19 +37,19 @@ const s:start = 's'
 
 "TODO: BUG: Fix the spawns of enemies going out of bounds
 
-"TODO: Add a timer? to return the ability to shoot to the player
+"TODO: QoL: Add a timer? to return the ability to shoot to the player
 
-"TODO: Fix animations not ending when a key is not pressed (maybe use
+"TODO: BUG: Fix animations not ending when a key is not pressed (maybe use
 "timer_stop)
 
-"TODO: Make better animations for walking. Maybe include a middle one between
+"TODO: VISUAL: Make better animations for walking. Maybe include a middle one between
 "the idle and a side walk
 
-"TODO: Change the highlighting of the enemies and the shuriken
+"TODO: QoL: Change the highlighting of the enemies and the shuriken
 
 "TODO: Block other mappings
 
-"Sprites
+"Old shuriken:
 "const s:shuriken = '۞'
 const s:shuriken = '*'
 
@@ -129,7 +129,7 @@ func s:Init()
     let s:enemies_left = 0
     let s:spawn_enemies = 1
 
-    " 0 -> facing down, 1 -> left, 2 -> up, 3 -> right
+    "0 -> facing down, 1 -> left, 2 -> up, 3 -> right
     let s:last_facing = 0
 endfunc
 
@@ -244,6 +244,9 @@ func s:HandleInput(id, key)
     elseif a:key == s:quit || a:key == toupper(s:quit)
         call s:Clear()
         let s:spawn_enemies = 0
+        echo 'Game closed'
+        sleep
+        exec 'tabclose'
     endif
 endfunc
 
@@ -343,7 +346,7 @@ func s:KillEnemy(id, state)
         let s:enemies_left -= 1
         call popup_close(a:id)
         if s:enemies_left == 0
-            echo 'Game over!'
+            echo 'Game over! No enemies left... Work in progress!'
         endif
         return
     endif

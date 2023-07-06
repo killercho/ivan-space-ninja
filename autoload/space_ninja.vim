@@ -19,6 +19,8 @@ const s:shuriken_speed = 1
 const s:shuriken_move_delay = 30
 
 const s:enemy_death_delay = 100
+const s:enemy_speed = 1
+const s:enemy_move_delay = 50
 
 const s:start_spawn_timer = 2000
 const s:spawn_decrem = 10
@@ -35,9 +37,16 @@ const s:shoot = ' '
 const s:quit = 'q'
 const s:start = 's'
 
+"TODO: BUG: After quiting the game the 'q' key still remembers that it was
+"pressed
+
+"TODO: BUG: After an enemy is killed a bug appears with timer_stop
+
+"TODO: IMPLEMENT: Player death when touched by an enemy
+
 "TODO: BUG: Fix the spawns of enemies going out of bounds
 
-"TODO: QoL: Add a timer? to return the ability to shoot to the player
+"TODO: IMPLEMENT: Add a timer? to return the ability to shoot to the player
 
 "TODO: BUG: Fix animations not ending when a key is not pressed (maybe use
 "timer_stop)
@@ -47,7 +56,7 @@ const s:start = 's'
 
 "TODO: QoL: Change the highlighting of the enemies and the shuriken
 
-"TODO: Block other mappings
+"TODO: IMPLEMENT: Block other mappings
 
 "Old shuriken:
 "const s:shuriken = '۞'
@@ -180,7 +189,7 @@ func s:IntroFilter(id, key)
         let s:ready = popup_create('IVAN GO!', #{border: [], padding:[2, 4, 2, 4]})
             call timer_start(s:ready_timeout, { -> s:StartGame()})
     elseif a:key == s:quit || a:key == toupper(s:quit)
-        call s:Clear()
+        call s:QuitGame()
     endif
     return 1
 endfunc
@@ -234,6 +243,15 @@ func s:AnimateNinja(id, state)
     call timer_start(s:ninja_anim_timeout, {x -> s:AnimateNinja(a:id, a:state == 0 ? 1 : 0)})
 endfunc
 
+func s:QuitGame()
+    call s:Clear()
+    let s:spawn_enemies = 0
+    echo 'Game closed! Thanks for playing!'
+    sleep
+    exec 'bd'
+    "exec tabclose might work better
+endfunc
+
 func s:HandleInput(id, key)
     if a:key == s:move_up ||
                 \ a:key == s:move_down ||
@@ -242,11 +260,7 @@ func s:HandleInput(id, key)
                 \ a:key == s:shoot
         call s:MoveNinja(a:id, a:key)
     elseif a:key == s:quit || a:key == toupper(s:quit)
-        call s:Clear()
-        let s:spawn_enemies = 0
-        echo 'Game closed'
-        sleep
-        exec 'tabclose'
+        call s:QuitGame()
     endif
 endfunc
 
@@ -345,6 +359,7 @@ func s:KillEnemy(id, state)
     if a:state == 3
         let s:enemies_left -= 1
         call popup_close(a:id)
+        call timer_stop()
         if s:enemies_left == 0
             echo 'Game over! No enemies left... Work in progress!'
         endif
@@ -365,10 +380,11 @@ func s:SpawnEnemiesFact()
     let seed = srand()
     let correct_placement = 0
     while correct_placement == 0
+        let correct_placement = 0
         let rand_line = rand(seed) % &lines
-        let correct_placement = rand_line > s:ninja_height - 1 && rand_line < &lines - s:ninja_height - 1 ? 1 : 0
+        let correct_placement = rand_line > s:ninja_height - 3 && rand_line < &lines - s:ninja_height - 1 ? 1 : 0
         let rand_col = rand(seed) % &columns
-        let correct_placement += rand_col > s:ninja_width && rand_col < &columns - s:ninja_width ? 1 : 0
+        let correct_placement += rand_col > s:ninja_width - 1 && rand_col < &columns - s:ninja_width - 1 ? 1 : 0
     endwhile
     let rand_color_num = rand(seed) % 2
     if rand_color_num == 0
@@ -392,5 +408,52 @@ func s:SpawnEnemy(line, col, color)
                 \ wrap: 0
                 \ })
     let s:enemies_left += 1
+    call s:MoveEnemy(enemy_id)
 endfunc
 
+func s:AnimateEnemy(id, state)
+    " Might have a problem with the timers after an enemy is killed
+    " possible solution: check if the id is correct before doing anything
+    if a:state == 1
+        call popup_settext(a:id, s:enemy_sprites[0])
+    else
+        call popup_settext(a:id, s:enemy_sprites[1])
+    endif
+    call timer_start(s:enemy_move_delay, {x -> s:AnimateEnemy(a:id, a:state == 0 ? 1 : 0)})
+endfunc
+
+func s:MoveEnemy(id)
+    " Might have a problem with the timers after an enemy is killed
+    " possible solution: check if the id is correct before doing anything
+    let pos = popup_getpos(a:id)
+    let player_pos = popup_getpos(s:ninja_id)
+
+    let popup_on_location = popup_locate(pos.line, pos.col)
+    if popup_on_location == s:ninja_id
+        " Kill player here
+        " Probably just call a function that ends the game using a popup
+        " showing the score at the moment and a replayable option
+        return
+    endif
+
+    let move_horizontal = pos.col
+    let move_vertical = pos.line
+    if pos.line < player_pos.line
+        let move_vertical += s:enemy_speed
+    elseif pos.line > player_pos.line
+        let move_vertical -= s:enemy_speed
+    endif
+
+    if pos.col < player_pos.col
+        let move_horizontal += s:enemy_speed
+    elseif pos.col > player_pos.col
+        let move_horizontal -= s:enemy_speed
+    endif
+
+    call popup_move(a:id, #{
+                \ col: move_horizontal,
+                \ line: move_vertical,
+                \ })
+    call s:AnimateEnemy(a:id, 0)
+    call timer_start(s:enemy_move_delay, {x -> s:MoveEnemy(a:id)})
+endfunc

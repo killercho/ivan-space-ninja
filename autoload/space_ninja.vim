@@ -117,10 +117,7 @@ func space_ninja#Start()
 endfunc
 
 func s:Init()
-    if filereadable(bufname('%'))
-        exec 'w'
-    endif
-    exec 'enew'
+    exec 'tabnew'
 
     hi def NinjaBody ctermbg=black guibg=black
     hi def NinjaShuriken ctermbg=yellow guibg=yellow
@@ -181,18 +178,15 @@ func s:IntroFilter(id, key)
     if a:key == s:start || a:key == toupper(s:start)
         call s:Clear()
         let s:ready = popup_create('IVAN GO!', #{border: [], padding:[2, 4, 2, 4]})
-            echo 'Game started!'
-        call timer_start(s:ready_timeout, { -> s:StartGame()})
+            call timer_start(s:ready_timeout, { -> s:StartGame()})
     elseif a:key == s:quit || a:key == toupper(s:quit)
         call s:Clear()
-        echo 'Game quited!'
     endif
     return 1
 endfunc
 
 func s:IntroClose(id, res)
     call s:Close()
-    echo 'Closed intro'
 endfunc
 
 func s:StartGame()
@@ -206,7 +200,6 @@ func s:StartGame()
                 \ zindex: s:ninja_zindex,
                 \ mapping: 0
                 \ })
-    echo 'Game is starting'
     call s:AnimateNinja(s:ninja_id, 0)
     call s:SpawnEnemiesFact()
     let s:score_popup_id = popup_create(string(s:score), #{
@@ -251,7 +244,6 @@ func s:HandleInput(id, key)
     elseif a:key == s:quit || a:key == toupper(s:quit)
         call s:Clear()
         let s:spawn_enemies = 0
-        echo 'Game quited'
     endif
 endfunc
 

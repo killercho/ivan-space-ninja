@@ -37,16 +37,28 @@ const s:shoot = ' '
 const s:quit = 'q'
 const s:start = 's'
 
+"TODO: IMPLEMENT: For coop both players are spawned and have different scores
+"and in the end the one with the higher one wins, once one player dies the
+"other can countinue
+
+"TODO: IMPLEMENT: For single player make an endless enemy spawns, where their
+"move speed increases each time a new enemy is spawned. When the player dies
+"show the score he got and reset the field if needed
+
+"TODO: IMPLEMENT: Block other mappings
+
+"TODO: IMPLEMENT: Player death when touched by an enemy
+
+"TODO: IMPLEMENT: Add a timer? to return the ability to shoot to the player
+
 "TODO: BUG: After quiting the game the 'q' key still remembers that it was
 "pressed
 
 "TODO: BUG: After an enemy is killed a bug appears with timer_stop
-
-"TODO: IMPLEMENT: Player death when touched by an enemy
+"To fix it change the a:id to something invalid (like -1000) and check if its
+"that value in the beginning of the function
 
 "TODO: BUG: Fix the spawns of enemies going out of bounds
-
-"TODO: IMPLEMENT: Add a timer? to return the ability to shoot to the player
 
 "TODO: BUG: Fix animations not ending when a key is not pressed (maybe use
 "timer_stop)
@@ -54,9 +66,7 @@ const s:start = 's'
 "TODO: VISUAL: Make better animations for walking. Maybe include a middle one between
 "the idle and a side walk
 
-"TODO: QoL: Change the highlighting of the enemies and the shuriken
-
-"TODO: IMPLEMENT: Block other mappings
+"TODO: VISUAL: Change the highlighting of the enemies and the shuriken
 
 "Old shuriken:
 "const s:shuriken = '۞'

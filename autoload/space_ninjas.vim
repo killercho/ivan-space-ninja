@@ -30,8 +30,8 @@ const s:spawn_timer_min = 250
 
 const s:score_per_kill = 20
 
-const s:excelent_job_mark = 1000
-const s:good_job_mark = 500
+const s:low_score = 300
+const s:low_difference_score = 60
 
 "Binds player 1
 const s:move_left_p1 = '<left>'
@@ -193,7 +193,7 @@ endfunc
 func s:IntroFilter(id, key)
     if a:key == s:start || a:key == toupper(s:start)
         call s:Clear()
-        let s:ready = popup_create('IVAN GO!', #{border: [], padding:[2, 4, 2, 4]})
+        let s:ready = popup_create('MANY IVANS GO!', #{border: [], padding:[2, 4, 2, 4]})
             call timer_start(s:ready_timeout, { -> s:StartGame()})
     elseif a:key == s:quit || a:key == toupper(s:quit)
         call s:QuitGame()
@@ -203,18 +203,35 @@ endfunc
 
 func s:StartGame()
     call s:Clear()
-    let s:ninja_id = popup_create(s:ninja_sprites[0], #{
+    let s:ninja_1_id = popup_create(s:ninja_sprites[0], #{
                 \ line: &lines / 2,
+                \ col: &columns / 2 + 6,
                 \ highlight: 'NinjaBody1',
-                \ filter: function('s:HandleInput'),
+                \ filter: function('s:HandleInputNinja1'),
                 \ zindex: s:ninja_zindex,
                 \ mapping: 0
                 \ })
-    call s:AnimateNinja(s:ninja_id, 0)
+    let s:ninja_2_id = popup_create(s:ninja_sprites[0], #{
+                \ line: &lines / 2,
+                \ col: &columns / 2 - 6,
+                \ highlight: 'NinjaBody2',
+                \ filter: function('s:HandleInputNinja2'),
+                \ zindex: s:ninja_zindex,
+                \ mapping: 0
+                \ })
+    call s:AnimateNinja(s:ninja_1_id, 0)
+    call s:AnimateNinja(s:ninja_2_id, 0)
     call s:SpawnEnemiesFact()
-    let s:score_popup_id = popup_create(string(s:score), #{
+    let s:score_popup_1_id = popup_create(string(s:score_1), #{
                 \ line: 1,
                 \ col: &columns - 4,
+                \ border: [],
+                \ padding: [0, 1, 0, 1],
+                \ zindex: 3000,
+                \ })
+    let s:score_popup_2_id = popup_create(string(s:score_2), #{
+                \ line: 1,
+                \ col: 4,
                 \ border: [],
                 \ padding: [0, 1, 0, 1],
                 \ zindex: 3000,
@@ -222,15 +239,15 @@ func s:StartGame()
 endfunc
 
 func s:Clear()
-    call popup_clear()
+    call popup_clear(1)
     let s:spawn_timer = s:start_spawn_timer
     let s:shuriken_avaliable = 1
-    let s:score = 0
+    let s:score_1 = 0
+    let s:score_2 = 0
     let s:enemy_move_delay = s:enemy_max_move_delay
     let s:spawn_timer = s:start_spawn_timer
     let s:spawn_enemies = 1
-    "0 -> facing down, 1 -> left, 2 -> up, 3 -> right
-    let s:last_facing = 0
+    let s:players_left = 2
 endfunc
 
 func s:AnimateNinja(id, state)
@@ -257,13 +274,13 @@ func s:QuitGame()
     "exec tabclose might work better
 endfunc
 
-func s:HandleInput(id, key)
-    if a:key == s:move_up ||
-                \ a:key == s:move_down ||
-                \ a:key == s:move_right ||
-                \ a:key == s:move_left ||
-                \ a:key == s:shoot
-        call s:MoveNinja(a:id, a:key)
+func s:HandleInputNinja1(id, key)
+    if a:key == s:move_up_p1 ||
+                \ a:key == s:move_down_p1 ||
+                \ a:key == s:move_right_p1 ||
+                \ a:key == s:move_left_p1 ||
+                \ a:key == s:shoot_p1
+        call s:MoveNinja1(a:id, a:key)
     elseif a:key == s:quit || a:key == toupper(s:quit)
         call s:QuitGame()
     else
@@ -271,36 +288,64 @@ func s:HandleInput(id, key)
     endif
 endfunc
 
-func s:PlayerKilled()
-    call timer_stopall()
-    call popup_clear(1)
-    let compliment_second = ''
-    if s:score > s:excelent_job_mark
-        let compliment = 'Damn you really know how to kill space robots! Keep it up!'
-    elseif s:score > s:good_job_mark
-        let compliment = 'Good Job you killed what you could. Better luck next time.'
+func s:HandleInputNinja2(id, key)
+    if a:key == s:move_up_p2 ||
+                \ a:key == s:move_down_p2 ||
+                \ a:key == s:move_right_p2 ||
+                \ a:key == s:move_left_p2 ||
+                \ a:key == s:shoot_p2
+        call s:MoveNinja2(a:id, a:key)
+    elseif a:key == s:quit || a:key == toupper(s:quit)
+        call s:QuitGame()
     else
-        let compliment = 'You are really bad at this aren''t you.'
-        let compliment_second = 'It''s ok not everyone is good at everything... or anything.'
+        call setwinvar(a:id, 'direction', 0)
     endif
-    let death_popup = popup_create([
-                \   s:NoProp('                          Game Over!'),
-                \   s:NoProp(''),
-                \   s:NoProp('                  In the end your score was ' .. s:score .. '!'),
-                \   s:NoProp('            ' .. compliment),
-                \   s:NoProp('     ' .. compliment_second),
-                \   #{text: '    To play the game again press   ' .. s:start .. '   or press   ' .. s:quit .. '   to leave. ',
-                \     props: [#{col: 36, length: 1, type: 'ninja_title'},
-                \             #{col: 51, length: 1, type: 'ninja_title'}]},
-                \ ], #{
-                \   filter: function('s:DeathFilter'),
-                \   callback: function('s:Clear'),
-                \   border: [],
-                \   padding: [],
-                \   mapping: 0,
-                \   drag: 1,
-                \   close: 'button',
-                \   })
+endfunc
+
+func s:PlayerKilled(id)
+    if s:players_left == 0
+        call timer_stopall()
+        call popup_clear(1)
+        let insult_1 = ''
+        let insult_2 = ''
+        let insult_1_2 = #{text: '    To play the game again press   ' .. s:start .. '   or press   ' .. s:quit .. '   to leave. ',
+                    \     props: [#{col: 36, length: 1, type: 'ninja_title'},
+                    \             #{col: 51, length: 1, type: 'ninja_title'}]}
+        if s:score_1 < s:low_score && s:score_2 < s:low_score
+            let insult_1_2 = #{text: 'Damn you are both trash. Make the robots a favour and don''t come back...', props: []}
+                elseif s:score_1 < s:low_score
+            let insult_1 = 'WOW you realy struggled out there. It''s good that you had a buddy.'
+                elseif s:score_2 < s:low_score
+                    let insult_2 = 'It''s good that you are player 2 and not player 1 since you can''t be the main character.'
+                endif
+                if s:score_1 - s:score_2 < s:low_difference_score
+                    let game_overview_l1 = 'The game was closer than expected.'
+                    let game_overview_l2 = 'Go on try it again. Resolve the dispute'
+                    if insult_1_2 != #{text: 'Damn you are both trash. Make the robots a favour and don''t come back...', props: []}
+                            let game_overview_l2 = 'Maybe it will be best if you both just leave gaming for now...'
+                    endif
+                endif
+                let death_popup = popup_create([
+                            \   s:NoProp('Game Over!'),
+                            \   s:NoProp(''),
+                            \   s:NoProp('In the end player one had ' .. s:score_1 .. ' points and player two had ' .. s:score_2 .. ' points.'),
+                            \   s:NoProp('' .. insult_1),
+                            \   s:NoProp('' .. insult_2),
+                            \   s:NoProp('' .. game_overview_l1),
+                            \   s:NoProp('' .. game_overview_l2),
+                            \   insult_1_2,
+                            \ ], #{
+                            \   filter: function('s:DeathFilter'),
+                            \   callback: function('s:Clear'),
+                            \   border: [],
+                            \   padding: [],
+                            \   mapping: 0,
+                            \   drag: 1,
+                            \   close: 'button',
+                            \   })
+    elseif s:players_left == 1
+        call popup_close(a:id)
+    endif
 endfunc
 
 func s:DeathFilter(id, key)
@@ -312,29 +357,29 @@ func s:DeathFilter(id, key)
     endif
 endfunc
 
-func s:MoveNinja(id, key)
+func s:MoveNinja1(id, key)
     let pos = popup_getpos(a:id)
     let move_col = pos.col
     let move_line = pos.line
     let left_anim = 0
     let right_anim = 0
 
-    if a:key == s:move_right && pos.col < &columns - s:ninja_width
+    if a:key == s:move_right_p1 && pos.col < &columns - s:ninja_width
         let move_col = pos.col + s:ninja_speed
         let left_anim = 1
-        let s:last_facing = 3
-    elseif a:key == s:move_left && pos.col > s:ninja_width
+        call setwinvar(a:id, 'last_facing', 3)
+    elseif a:key == s:move_left_p1 && pos.col > s:ninja_width
         let move_col = pos.col - s:ninja_speed
         let right_anim = 1
-        let s:last_facing = 1
+        call setwinvar(a:id, 'last_facing', 1)
     endif
 
-    if a:key == s:move_down && pos.line < &lines - s:ninja_height - 1
+    if a:key == s:move_down_p1 && pos.line < &lines - s:ninja_height - 1
         let move_line = pos.line + s:ninja_speed
-        let s:last_facing = 0
-    elseif a:key == s:move_up && pos.line > s:ninja_height - 1
+        call setwinvar(a:id, 'last_facing', 0)
+    elseif a:key == s:move_up_p1 && pos.line > s:ninja_height - 1
         let move_line = pos.line - s:ninja_speed
-        let s:last_facing = 2
+        call setwinvar(a:id, 'last_facing', 2)
     endif
 
     if move_line != 0 || move_col != 0
@@ -348,29 +393,77 @@ func s:MoveNinja(id, key)
             endif
     endif
 
-    if a:key == s:shoot
-        call s:FireShuriken(pos.line, pos.col)
+    if a:key == s:shoot_p1
+        call s:FireShuriken(1, pos.line, pos.col)
     endif
 endfunc
 
-func s:FireShuriken(line, col)
+func s:MoveNinja2(id, key)
+    let pos = popup_getpos(a:id)
+    let move_col = pos.col
+    let move_line = pos.line
+    let left_anim = 0
+    let right_anim = 0
+
+    if a:key == s:move_right_p2 && pos.col < &columns - s:ninja_width
+        let move_col = pos.col + s:ninja_speed
+        let left_anim = 1
+        call setwinvar(a:id, 'last_facing', 3)
+    elseif a:key == s:move_left_p2 && pos.col > s:ninja_width
+        let move_col = pos.col - s:ninja_speed
+        let right_anim = 1
+        call setwinvar(a:id, 'last_facing', 1)
+    endif
+
+    if a:key == s:move_down_p2 && pos.line < &lines - s:ninja_height - 1
+        let move_line = pos.line + s:ninja_speed
+        call setwinvar(a:id, 'last_facing', 0)
+    elseif a:key == s:move_up_p2 && pos.line > s:ninja_height - 1
+        let move_line = pos.line - s:ninja_speed
+        call setwinvar(a:id, 'last_facing', 2)
+    endif
+
+    if move_line != 0 || move_col != 0
+        call popup_move(a:id, #{col: move_col, line: move_line})
+            if left_anim == 1
+        call setwinvar(a:id, 'direction', 1)
+            elseif right_anim == 1
+                call setwinvar(a:id, 'direction', 2)
+            else
+                call setwinvar(a:id, 'direction', 0)
+            endif
+    endif
+
+    if a:key == s:shoot_p2
+        call s:FireShuriken(2, pos.line, pos.col)
+    endif
+endfunc
+
+func s:FireShuriken(id, line, col)
+    if a:id == 1
+        let shuriken_highlight = 'NinjaShuriken1'
+        let last_facing = getwinvar(s:ninja_1_id, 'last_facing')
+    elseif a:id == 2
+        let shuriken_highlight = 'NinjaShuriken2'
+        let last_facing = getwinvar(s:ninja_2_id, 'last_facing')
+    endif
     if s:shuriken_avaliable == 0
         return
     endif
-    let correction_cols = s:last_facing == 1 ? -1 : s:last_facing == 3 ? 1 : 0
-    let correction_lines = s:last_facing == 2 ? -1 : s:last_facing == 0 ? 1 : 0
+    let correction_cols = last_facing == 1 ? -1 : last_facing == 3 ? 1 : 0
+    let correction_lines = last_facing == 2 ? -1 : last_facing == 0 ? 1 : 0
     let spawn_col = a:col + 1 + correction_cols
     let spawn_line = a:line + 1 + correction_lines
     let shuriken_id = popup_create(s:shuriken, #{
                 \ col: spawn_col,
                 \ line: spawn_line,
-                \ highlight: 'NinjaShuriken1',
+                \ highlight: shuriken_highlight,
                 \ zindex: s:shuriken_zindex,
                 \ })
-    call s:MoveShuriken(0, shuriken_id, s:last_facing)
+    call s:MoveShuriken(0, shuriken_id, last_facing, a:id)
 endfunc
 
-func s:MoveShuriken(x, id, direction)
+func s:MoveShuriken(x, id, direction, origin)
     let pos = popup_getpos(a:id)
     if empty(pos)
         call timer_stop(a:x)
@@ -388,15 +481,23 @@ func s:MoveShuriken(x, id, direction)
                     \ line: new_line,
                     \ })
         let popup_on_location = popup_locate(new_line, new_col)
-        if popup_on_location != 0 && popup_on_location != a:id
+        if popup_on_location != 0
+                    \ && popup_on_location != a:id
+                    \ && popup_on_location != s:ninja_1_id
+                    \ && popup_on_location != s:ninja_2_id
             call s:KillEnemy(0, popup_on_location, 0)
-            let s:score += s:score_per_kill
-            call popup_settext(s:score_popup_id, string(s:score))
+            if a:origin == 1
+                let s:score_1 += s:score_per_kill
+            elseif a:origin == 2
+                let s:score_2 += s:score_per_kill
+            endif
+            call popup_settext(s:score_popup_1_id, string(s:score_1))
+            call popup_settext(s:score_popup_2_id, string(s:score_2))
             call popup_close(a:id)
         endif
     endif
 
-    call timer_start(s:shuriken_move_delay, {x -> s:MoveShuriken(x, a:id, a:direction)})
+    call timer_start(s:shuriken_move_delay, {x -> s:MoveShuriken(x, a:id, a:direction, a:origin)})
 endfunc
 
 func s:KillEnemy(x, id, state)
@@ -479,11 +580,27 @@ func s:MoveEnemy(x, id, move_delay)
         call timer_stop(a:x)
         return
     endif
-    let player_pos = popup_getpos(s:ninja_id)
+    let seed = srand()
+    let rand_ninja = rand(seed) % 2
+    if s:players_left == 2
+        if rand_ninja == 0
+            let player_pos = popup_getpos(s:ninja_1_id)
+        elseif rand_ninja == 1
+            let player_pos = popup_getpos(s:ninja_2_id)
+        endif
+    elseif s:players_left == 1
+        let player_pos = popup_getpos(s:ninja_1_id)
+        if empty(player_pos)
+            let player_pos = popup_getpos(s:ninja_2_id)
+        endif
+    endif
 
     let popup_on_location = popup_locate(pos.line, pos.col)
-    if popup_on_location == s:ninja_id
-        call s:PlayerKilled()
+    if popup_on_location == s:ninja_1_id || popup_on_location == s:ninja_2_id
+        let s:players_left -= 1
+        call s:PlayerKilled(popup_on_location)
+        call timer_stop(a:x)
+        call popup_close(a:id)
         return
     endif
 

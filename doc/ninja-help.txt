@@ -1,0 +1,95 @@
+*ninja-help.txt*       Play a recreation of the minigame 'Journey of the Prairie King' in vim.
+
+NINJA REFERENCE MANUAL
+
+==============================================================================================
+Contents                                                    *ivan* *ninja-help-contents*
+
+Intro..................................................: |ninja-intro|
+Installation...........................................: |ninja-installation|
+Start singleplayer game................................: |singleplayer-ninja|
+Controls singleplayer..................................: |singleplayer-controls|
+Start multiplayer game.................................: |multiplayer-ninja|
+Controls multiplayer...................................: |multiplayer-controls|
+Additional notes.......................................: |notes|
+
+==============================================================================================
+Intro                                                                   *ninja-intro*
+
+This plugin provides an experience close to that of the minigame 'Journey of the Prairie King'
+but with a little spin with ninjas, space robots and inside of Vim. Okay maybe not so little...
+
+Below is all the information that you may need to install play and just overall have fun with
+the game.
+
+==============================================================================================
+Installation                                                            *ninja-installation*
+
+The easiest way to install the plugin is with a plugin manager (vim-plug for example).
+If you don't know what that is or how to use it please check the vim-plug repository for
+detailed information (https://github.com/junegunn/vim-plug).
+
+Now that you have an idea of what the plugin manager is you can install the game easily
+by just adding >
+Plug 'killercho/ivan-space-ninja'
+>
+
+==============================================================================================
+Start singleplayer game                                                 *singleplayer-ninja*
+
+:*IvanGo*
+Starts a singleplayer game where the player kills endless enemies and the
+higher the score the better.
+
+==============================================================================================
+Controls for singleplayer games                                         *singleplayer-controls*
+
+To control the character you can use:
+- <h> - to go left
+- <l> - to go right
+- <j> - to go down
+- <k> - to go up
+
+Additionally the character can shoot out a shuriken with <space>
+
+==============================================================================================
+Start multiplayer game                                                  *multiplayer-ninja*
+
+:*ManyIvansGo*
+Starts a two player game on the same window where the players compete in
+killing as much enemies as they can. The game ends when both players die.
+If one of them is alive he can continue killing and bringing his score up.
+In the end the one with the higher score wins.
+
+==============================================================================================
+Controls for multiplayer games                                          *multiplayer-controls*
+
+To control character 1 you can use:
+- <arrow-left> - to go left
+- <arrow-right> - to go right
+- <arrow-down> - to go down
+- <arrow-up> - to go up
+
+To control character 2 you can use:
+- <a> - to go left
+- <d> - to go right
+- <s> - to go down
+- <w> - to go up
+
+Additionally the characters can shoot out a shuriken with <l> for character 1 and
+<v> for character 2.
+
+==============================================================================================
+Additional notes                                                        *multiplayer-controls*
+
+Just remember to have fun.
+For those that are still trying to find more stuff about the game i can tell
+you a secret... The game has a hidden mechanic - DASH. Don't be surprised it's
+not written anywhere so only the most curious ones would use it. To actually
+use it you need to set a global variable in your vimrc and then activate it
+with <shift>. The variable is >
+g:ivebeenplayed = 1
+>
+Good luck buddy. :)
+==============================================================================================
+vim:ft=help

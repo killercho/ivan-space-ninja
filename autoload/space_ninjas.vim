@@ -20,17 +20,17 @@ const s:shuriken_move_delay = 30
 
 const s:enemy_death_delay = 100
 const s:enemy_speed = 1
-const s:enemy_max_move_delay = 350
-const s:enemy_move_delay_decrem = 2
+const s:enemy_max_move_delay = 200
+const s:enemy_move_delay_decrem = 5
 const s:enemy_min_move_delay = 50
 
-const s:start_spawn_timer = 2000
+const s:start_spawn_timer = 1500
 const s:spawn_decrem = 10
 const s:spawn_timer_min = 250
 
 const s:score_per_kill = 20
 
-const s:low_score = 300
+const s:low_score = 500
 const s:low_difference_score = 60
 
 "Binds player 1
@@ -49,6 +49,8 @@ const s:shoot_p2 = 'g'
 
 const s:quit = 'q'
 const s:start = 's'
+
+"TODO: BUG: Timers for the animations don't stop
 
 "TODO: BUG: After quiting the game the 'q' key still remembers that it was
 "pressed
@@ -274,15 +276,17 @@ func s:HandleInput(id, key)
                 \ a:key == s:move_right_p1 ||
                 \ a:key == s:move_left_p1 ||
                 \ a:key == s:shoot_p1
-        call s:MoveNinja1(s:ninja_1_id, a:key)
+        call s:MoveNinja(s:ninja_1_id, a:key)
     elseif a:key == s:move_up_p2 ||
                 \ a:key == s:move_down_p2 ||
                 \ a:key == s:move_right_p2 ||
                 \ a:key == s:move_left_p2 ||
                 \ a:key == s:shoot_p2
-        call s:MoveNinja2(s:ninja_2_id, a:key)
+        call s:MoveNinja(s:ninja_2_id, a:key)
     elseif a:key == s:quit || a:key == toupper(s:quit)
         call s:QuitGame()
+    else
+        call setwinvar(a:id, 'direction', 0)
     endif
     return 1
 endfunc
@@ -303,7 +307,7 @@ func s:PlayerKilled(id)
                 elseif s:score_2 < s:low_score
                     let insult_2 = 'It''s good that you are player TWO and not player ONE since you can''t be the main character.'
                 endif
-                if s:score_1 - s:score_2 < s:low_difference_score
+                if abs(s:score_1 - s:score_2) < s:low_difference_score
                     let game_overview_l1 = 'The game was closer than expected.'
                     let game_overview_l2 = 'Go on try it again. Resolve the dispute'
                     if insult_1_2 == #{text: 'Damn you are both trash. Make the robots a favour and don''t come back...', props: []}
@@ -342,27 +346,41 @@ func s:DeathFilter(id, key)
     endif
 endfunc
 
-func s:MoveNinja1(id, key)
+func s:MoveNinja(id, key)
     let pos = popup_getpos(a:id)
     let move_col = pos.col
     let move_line = pos.line
     let left_anim = 0
     let right_anim = 0
 
-    if a:key == s:move_right_p1 && pos.col < &columns - s:ninja_width
+    if a:id == s:ninja_1_id
+        let move_left = s:move_left_p1
+        let move_right = s:move_right_p1
+        let move_up = s:move_up_p1
+        let move_down = s:move_down_p1
+        let shoot = s:shoot_p1
+    elseif a:id == s:ninja_2_id
+        let move_left = s:move_left_p2
+        let move_right = s:move_right_p2
+        let move_up = s:move_up_p2
+        let move_down = s:move_down_p2
+        let shoot = s:shoot_p2
+    endif
+
+    if a:key == move_right && pos.col < &columns - s:ninja_width
         let move_col = pos.col + s:ninja_speed
         let left_anim = 1
         call setwinvar(a:id, 'last_facing', 3)
-    elseif a:key == s:move_left_p1 && pos.col > s:ninja_width
+    elseif a:key == move_left && pos.col > s:ninja_width
         let move_col = pos.col - s:ninja_speed
         let right_anim = 1
         call setwinvar(a:id, 'last_facing', 1)
     endif
 
-    if a:key == s:move_down_p1 && pos.line < &lines - s:ninja_height - 1
+    if a:key == move_down && pos.line < &lines - s:ninja_height - 1
         let move_line = pos.line + s:ninja_speed
         call setwinvar(a:id, 'last_facing', 0)
-    elseif a:key == s:move_up_p1 && pos.line > s:ninja_height - 1
+    elseif a:key == move_up && pos.line > s:ninja_height - 1
         let move_line = pos.line - s:ninja_speed
         call setwinvar(a:id, 'last_facing', 2)
     endif
@@ -378,57 +396,18 @@ func s:MoveNinja1(id, key)
             endif
     endif
 
-    if a:key == s:shoot_p1
-        call s:FireShuriken(1, pos.line, pos.col)
-    endif
-endfunc
-
-func s:MoveNinja2(id, key)
-    let pos = popup_getpos(a:id)
-    let move_col = pos.col
-    let move_line = pos.line
-    let left_anim = 0
-    let right_anim = 0
-
-    if a:key == s:move_right_p2 && pos.col < &columns - s:ninja_width
-        let move_col = pos.col + s:ninja_speed
-        let left_anim = 1
-        call setwinvar(a:id, 'last_facing', 3)
-    elseif a:key == s:move_left_p2 && pos.col > s:ninja_width
-        let move_col = pos.col - s:ninja_speed
-        let right_anim = 1
-        call setwinvar(a:id, 'last_facing', 1)
-    endif
-
-    if a:key == s:move_down_p2 && pos.line < &lines - s:ninja_height - 1
-        let move_line = pos.line + s:ninja_speed
-        call setwinvar(a:id, 'last_facing', 0)
-    elseif a:key == s:move_up_p2 && pos.line > s:ninja_height - 1
-        let move_line = pos.line - s:ninja_speed
-        call setwinvar(a:id, 'last_facing', 2)
-    endif
-
-    if move_line != 0 || move_col != 0
-        call popup_move(a:id, #{col: move_col, line: move_line})
-            if left_anim == 1
-        call setwinvar(a:id, 'direction', 1)
-            elseif right_anim == 1
-                call setwinvar(a:id, 'direction', 2)
-            else
-                call setwinvar(a:id, 'direction', 0)
-            endif
-    endif
-
-    if a:key == s:shoot_p2
-        call s:FireShuriken(2, pos.line, pos.col)
+    if a:key == shoot
+        call s:FireShuriken(a:id, pos.line, pos.col)
     endif
 endfunc
 
 func s:FireShuriken(id, line, col)
-    if a:id == 1
+    if a:id == s:ninja_1_id
+        let player = 1
         let shuriken_highlight = 'NinjaShuriken1'
         let last_facing = getwinvar(s:ninja_1_id, 'last_facing')
-    elseif a:id == 2
+    elseif a:id == s:ninja_2_id
+        let player = 2
         let shuriken_highlight = 'NinjaShuriken2'
         let last_facing = getwinvar(s:ninja_2_id, 'last_facing')
     endif
@@ -445,7 +424,7 @@ func s:FireShuriken(id, line, col)
                 \ highlight: shuriken_highlight,
                 \ zindex: s:shuriken_zindex,
                 \ })
-    call s:MoveShuriken(0, shuriken_id, last_facing, a:id)
+    call s:MoveShuriken(0, shuriken_id, last_facing, player)
 endfunc
 
 func s:MoveShuriken(x, id, direction, origin)

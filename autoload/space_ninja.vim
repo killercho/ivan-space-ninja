@@ -42,16 +42,6 @@ const s:shoot = ' '
 const s:quit = 'q'
 const s:start = 's'
 
-"TODO: BUG: After quiting the game the 'q' key still remembers that it was
-"pressed
-
-"TODO: BUG: Fix the spawns of enemies going out of bounds
-
-"TODO: VISUAL: Make better animations for walking. Maybe include a middle one between
-"the idle and a side walk
-
-"TODO: VISUAL: Change the highlighting of the enemies and the shuriken
-
 "Old shuriken:
 "const s:shuriken = '۞'
 const s:shuriken = '*'
@@ -291,6 +281,7 @@ func s:DeathFilter(id, key)
     elseif a:key == s:quit || a:key == toupper(s:quit)
         call s:QuitGame()
     endif
+    return 1
 endfunc
 
 func s:MoveNinja(id, key)

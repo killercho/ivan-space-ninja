@@ -34,11 +34,17 @@ const s:low_score = 300
 const s:low_difference_score = 60
 
 "Binds player 1
-const s:move_left_p1 = '<left>'
-const s:move_right_p1 = '<right>'
-const s:move_up_p1 = '<up>'
-const s:move_down_p1 = '<down>'
-const s:shoot_p1 = 'l'
+"const s:move_left_p1 = 'left'
+"const s:move_right_p1 = 'right'
+"const s:move_up_p1 = 'up'
+"const s:move_down_p1 = 'down'
+"const s:shoot_p1 = 'l'
+
+const s:move_left_p1 = 'l'
+const s:move_right_p1 = ''''
+const s:move_up_p1 = 'p'
+const s:move_down_p1 = ';'
+const s:shoot_p1 = 'j'
 
 "Binds player 2
 const s:move_left_p2 = 'a'

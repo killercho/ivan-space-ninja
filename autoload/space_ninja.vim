@@ -251,6 +251,7 @@ func s:HandleInput(id, key)
     else
         call setwinvar(a:id, 'direction', 0)
     endif
+    return 1
 endfunc
 
 func s:PlayerKilled()

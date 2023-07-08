@@ -49,8 +49,6 @@ const s:start = 's'
 
 "TODO: IMPLEMENT: Block other mappings
 
-"TODO: IMPLEMENT: Add a timer? to return the ability to shoot to the player
-
 "TODO: BUG: After quiting the game the 'q' key still remembers that it was
 "pressed
 

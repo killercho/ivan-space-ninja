@@ -1,35 +1,36 @@
-" bullet sprite ۞  -- space shuriken
-" retry ↻ icon
-"
-" use the highlighting to make better unicode characters
-
+"Z-indexes
 const s:ninja_zindex = 100
 const s:enemy_zindex = 90
 const s:shuriken_zindex = 80
 
+"Timeout of the message at prepare screen
 const s:ready_timeout = 1000
 
+"Ninja constants
 const s:ninja_speed = 1
 const s:ninja_width = 3
 const s:ninja_height = 3
 const s:ninja_anim_timeout = 100
 
-const s:shuriken_cd = 500
+"Shuriken constants
 const s:shuriken_speed = 1
 const s:shuriken_move_delay = 30
 
+"Enemy constants
 const s:enemy_death_delay = 100
 const s:enemy_speed = 1
 const s:enemy_max_move_delay = 200
 const s:enemy_move_delay_decrem = 5
 const s:enemy_min_move_delay = 50
 
+"Enemy spawn constants
 const s:start_spawn_timer = 1500
 const s:spawn_decrem = 10
 const s:spawn_timer_min = 250
 
 const s:score_per_kill = 20
 
+"Thresholds for the additional messages at the end
 const s:low_score = 500
 const s:low_difference_score = 60
 
@@ -47,13 +48,11 @@ const s:move_up_p2 = 'w'
 const s:move_down_p2 = 's'
 const s:shoot_p2 = 'g'
 
+"Binds for quiting and starting the game
 const s:quit = 'q'
 const s:start = 's'
 
-"TODO: BUG: Timers for the animations don't stop
-
-"Old shuriken:
-"const s:shuriken = '۞'
+"Sprites
 const s:shuriken = '*'
 
 const s:ninja_sprites = [[
@@ -133,6 +132,7 @@ func s:Init()
 endfunc
 
 func s:NoProp(text)
+    "Helper function for easier menu creating
     return #{text: a:text, props: []}
 endfunc
 
@@ -177,6 +177,7 @@ func s:Intro()
 endfunc
 
 func s:IntroFilter(id, key)
+    "Function responsible for handling the input from the intro
     if a:key == s:start || a:key == toupper(s:start)
         call s:Clear()
         let s:ready = popup_create('MANY IVANS GO!', #{border: [], padding:[2, 4, 2, 4]})
@@ -225,6 +226,7 @@ func s:StartGame()
 endfunc
 
 func s:Clear()
+    "Clearing all popups and reseting all values to default
     call popup_clear(1)
     let s:spawn_timer = s:start_spawn_timer
     let s:shuriken_avaliable = 1
@@ -260,6 +262,7 @@ func s:QuitGame()
 endfunc
 
 func s:HandleInput(id, key)
+    "Function handling the input from the players after the game started
     if a:key == s:move_up_p1 ||
                 \ a:key == s:move_down_p1 ||
                 \ a:key == s:move_right_p1 ||
@@ -281,6 +284,7 @@ func s:HandleInput(id, key)
 endfunc
 
 func s:PlayerKilled(id)
+    "Function responsible for the end message
     if s:players_left == 0
         call timer_stopall()
         call popup_clear(1)
@@ -329,6 +333,7 @@ func s:PlayerKilled(id)
 endfunc
 
 func s:DeathFilter(id, key)
+    "Function handling the input from the death screen
     if a:key == s:start || a:key == toupper(s:start)
         call s:Clear()
         call s:Intro()
@@ -339,6 +344,7 @@ func s:DeathFilter(id, key)
 endfunc
 
 func s:MoveNinja(id, key)
+    "Function responsible for moving the players
     let pos = popup_getpos(a:id)
     let move_col = pos.col
     let move_line = pos.line
@@ -420,6 +426,7 @@ func s:FireShuriken(id, line, col)
 endfunc
 
 func s:MoveShuriken(x, id, direction, origin)
+    "Function handling the movement and enemy detection of the shuriken
     let pos = popup_getpos(a:id)
     if empty(pos)
         call timer_stop(a:x)
@@ -457,6 +464,7 @@ func s:MoveShuriken(x, id, direction, origin)
 endfunc
 
 func s:KillEnemy(x, id, state)
+    "Function responsible for the last moments before an enemy dies
     let pos = popup_getpos(a:id)
     if empty(pos)
         call timer_stop(a:x)
@@ -476,6 +484,7 @@ func s:KillEnemy(x, id, state)
 endfunc
 
 func s:SpawnEnemiesFact()
+    "Function handling the spawning of the enemies
     if s:spawn_timer <= 0 || s:spawn_enemies == 0
         return
     endif
@@ -502,6 +511,7 @@ func s:SpawnEnemiesFact()
 endfunc
 
 func s:SpawnEnemy(line, col, color)
+    "Function responsible for creating the enemy
     let enemy_id = popup_create(s:enemy_sprites[0], #{
                 \ line: a:line,
                 \ col: a:col,
@@ -531,6 +541,8 @@ func s:AnimateEnemy(x, id, state)
 endfunc
 
 func s:MoveEnemy(x, id, move_delay)
+    "Function handling the movement of the enemy towards the players
+    "Only one player can be 'attractive' to the enemy at any point
     let pos = popup_getpos(a:id)
     if empty(pos)
         call timer_stop(a:x)

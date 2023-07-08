@@ -31,7 +31,8 @@ const s:spawn_timer_min = 250
 const s:score_per_kill = 20
 const s:enemies_per_level = 20
 
-const s:invalid_id = -1000
+const s:excelent_job_mark = 1000
+const s:good_job_mark = 500
 
 "Binds
 const s:move_left = 'h'
@@ -41,12 +42,6 @@ const s:move_down = 'j'
 const s:shoot = ' '
 const s:quit = 'q'
 const s:start = 's'
-
-"TODO: IMPLEMENT: Player death when touched by an enemy
-
-"TODO: IMPLEMENT: For single player make an endless enemy spawns, where their
-"move speed increases each time a new enemy is spawned. When the player dies
-"show the score he got and reset the field if needed
 
 "TODO: IMPLEMENT: For coop both players are spawned and have different scores
 "and in the end the one with the higher one wins, once one player dies the
@@ -141,12 +136,6 @@ func s:Init()
 
     hi def EnemyCol1 ctermbg=green guibg=green
     hi def EnemyCol2 ctermbg=blue guibg=blue
-
-    let s:spawn_timer = s:start_spawn_timer
-    let s:spawn_enemies = 1
-
-    "0 -> facing down, 1 -> left, 2 -> up, 3 -> right
-    let s:last_facing = 0
 endfunc
 
 func s:NoProp(text)
@@ -163,7 +152,7 @@ func s:Intro()
                 \     props: [#{col: 8, length: 37, type: 'ninja_title'}]},
                 \   s:NoProp(''),
                 \   s:NoProp('  To play you need to move and shoot...'),
-                \   s:NoProp('  Moving uses the normal movement keybinds in vim:'),
+                \   s:NoProp('  Moving uses the movement keys:'),
                 \   #{text: '       ' .. s:move_right .. '          move right',
                 \     props: [#{col: 8, length: 1, type: 'ninja_title'}]},
                 \   #{text: '       ' .. s:move_left .. '          move left',
@@ -181,7 +170,7 @@ func s:Intro()
                 \             #{col: 43, length: 1, type: 'ninja_title'}]},
                 \ ], #{
                 \   filter: function('s:IntroFilter'),
-                \   callback: function('s:IntroClose'),
+                \   callback: function('s:Clear'),
                 \   border: [],
                 \   padding: [],
                 \   mapping: 0,
@@ -201,15 +190,8 @@ func s:IntroFilter(id, key)
     return 1
 endfunc
 
-func s:IntroClose(id, res)
-    call s:Close()
-endfunc
-
 func s:StartGame()
     call s:Clear()
-    let s:score = 0
-    let s:enemy_move_delay = s:enemy_max_move_delay
-
     let s:ninja_id = popup_create(s:ninja_sprites[0], #{
                 \ line: &lines / 2,
                 \ highlight: 'NinjaBody',
@@ -226,7 +208,6 @@ func s:StartGame()
                 \ padding: [0, 1, 0, 1],
                 \ zindex: 3000,
                 \ })
-
 endfunc
 
 func s:Clear()
@@ -234,6 +215,11 @@ func s:Clear()
     let s:spawn_timer = s:start_spawn_timer
     let s:shuriken_avaliable = 1
     let s:score = 0
+    let s:enemy_move_delay = s:enemy_max_move_delay
+    let s:spawn_timer = s:start_spawn_timer
+    let s:spawn_enemies = 1
+    "0 -> facing down, 1 -> left, 2 -> up, 3 -> right
+    let s:last_facing = 0
 endfunc
 
 func s:AnimateNinja(id, state)
@@ -271,6 +257,47 @@ func s:HandleInput(id, key)
         call s:QuitGame()
     else
         call setwinvar(a:id, 'direction', 0)
+    endif
+endfunc
+
+func s:PlayerKilled()
+    call timer_stopall()
+    call popup_clear(1)
+    let compliment_second = ''
+    if s:score > s:excelent_job_mark
+        let compliment = 'Damn you really know how to kill space robots! Keep it up!'
+    elseif s:score > s:good_job_mark
+        let compliment = 'Good Job you killed what you could. Better luck next time.'
+    else
+        let compliment = 'You are really bad at this aren''t you.'
+        let compliment_second = 'It''s ok not everyone is good at everything... or anything.'
+    endif
+    let death_popup = popup_create([
+                \   s:NoProp('                          Game Over!'),
+                \   s:NoProp(''),
+                \   s:NoProp('                  In the end your score was ' .. s:score .. '!'),
+                \   s:NoProp('            ' .. compliment),
+                \   s:NoProp('     ' .. compliment_second),
+                \   #{text: '    To play the game again press   ' .. s:start .. '   or press   ' .. s:quit .. '   to leave. ',
+                \     props: [#{col: 36, length: 1, type: 'ninja_title'},
+                \             #{col: 51, length: 1, type: 'ninja_title'}]},
+                \ ], #{
+                \   filter: function('s:DeathFilter'),
+                \   callback: function('s:Clear'),
+                \   border: [],
+                \   padding: [],
+                \   mapping: 0,
+                \   drag: 1,
+                \   close: 'button',
+                \   })
+endfunc
+
+func s:DeathFilter(id, key)
+    if a:key == s:start || a:key == toupper(s:start)
+        call s:Clear()
+        call s:Intro()
+    elseif a:key == s:quit || a:key == toupper(s:quit)
+        call s:QuitGame()
     endif
 endfunc
 
@@ -445,9 +472,7 @@ func s:MoveEnemy(x, id, move_delay)
 
     let popup_on_location = popup_locate(pos.line, pos.col)
     if popup_on_location == s:ninja_id
-        " Kill player here
-        " Probably just call a function that ends the game using a popup
-        " showing the score at the moment and a replayable option
+        call s:PlayerKilled()
         return
     endif
 

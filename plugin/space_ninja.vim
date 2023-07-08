@@ -12,6 +12,20 @@ func s:StartIvanSpaceNinja()
     call space_ninja#Start()
 endfunc
 
+command ManyIvansGo call s:StartManyIvans()
+
+func s:StartManyIvans()
+    if !has('popupwin')
+        call s:WarningMessage('Sorry, but to run the game you need to have the +popupwin feature!')
+        return
+    endif
+    if !has('textprop')
+        call s:WarningMessage('Sorry, but to run the game you need to have the +textprop feature!')
+        return
+    endif
+    call space_ninjas#Start()
+endfunc
+
 func s:WarningMessage(msg)
     echohl WarningMsg
     echo a:msg

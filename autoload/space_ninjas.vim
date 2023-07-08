@@ -33,14 +33,26 @@ const s:score_per_kill = 20
 const s:excelent_job_mark = 1000
 const s:good_job_mark = 500
 
-"Binds
-const s:move_left = 'h'
-const s:move_right = 'l'
-const s:move_up = 'k'
-const s:move_down = 'j'
-const s:shoot = ' '
+"Binds player 1
+const s:move_left_p1 = '<left>'
+const s:move_right_p1 = '<right>'
+const s:move_up_p1 = '<up>'
+const s:move_down_p1 = '<down>'
+const s:shoot_p1 = 'l'
+
+"Binds player 2
+const s:move_left_p2 = 'a'
+const s:move_right_p2 = 'd'
+const s:move_up_p2 = 'w'
+const s:move_down_p2 = 's'
+const s:shoot_p2 = 'g'
+
 const s:quit = 'q'
 const s:start = 's'
+
+"TODO: IMPLEMENT: For coop both players are spawned and have different scores
+"and in the end the one with the higher one wins, once one player dies the
+"other can countinue
 
 "TODO: IMPLEMENT: Block other mappings
 
@@ -116,7 +128,7 @@ const s:enemy_sprites = [[
             \ '   ',
             \ '___']]
 
-func space_ninja#Start()
+func space_ninjas#Start()
     call s:Init()
     call s:Intro()
 endfunc
@@ -124,8 +136,11 @@ endfunc
 func s:Init()
     exec 'tabnew'
 
-    hi def NinjaBody ctermbg=black guibg=black
-    hi def NinjaShuriken ctermbg=yellow guibg=yellow
+    hi def NinjaBody1 ctermbg=black guibg=black
+    hi def NinjaShuriken1 ctermbg=yellow guibg=yellow
+
+    hi def NinjaBody2 ctermbg=gray guibg=gray
+    hi def NinjaShuriken2 ctermbg=red guibg=red
 
     hi def EnemyCol1 ctermbg=green guibg=green
     hi def EnemyCol2 ctermbg=blue guibg=blue
@@ -139,28 +154,31 @@ func s:Intro()
     hi NinjaTitle cterm=bold gui=bold
     call prop_type_delete('ninja_title')
     call prop_type_add('ninja_title', #{highlight: 'NinjaTitle'})
-        let shoot_text = s:shoot == ' ' ? '<Space>' : a:shoot
+        let move_right_text = s:move_right_p1 == '<right>' ? '>' : s:move_right_p1
+    let move_left_text = s:move_left_p1 == '<left>' ? '<' : s:move_up_p1
+    let move_up_text = s:move_up_p1 == '<up>' ? '^' : s:move_up_p1
     let s:intro_popup = popup_create([
-                \   #{text: '       The robots are coming to get you Ivan!',
-                \     props: [#{col: 8, length: 37, type: 'ninja_title'}]},
+                \   #{text: '       The robots are coming to get you Ivans!',
+                \     props: [#{col: 8, length: 38, type: 'ninja_title'}]},
                 \   s:NoProp(''),
                 \   s:NoProp('  To play you need to move and shoot...'),
-                \   s:NoProp('  Moving uses the movement keys:'),
-                \   #{text: '       ' .. s:move_right .. '          move right',
-                \     props: [#{col: 8, length: 1, type: 'ninja_title'}]},
-                \   #{text: '       ' .. s:move_left .. '          move left',
-                \     props: [#{col: 8, length: 1, type: 'ninja_title'}]},
-                \   #{text: '       ' .. s:move_down .. '          move down',
-                \     props: [#{col: 8, length: 1, type: 'ninja_title'}]},
-                \   #{text: '       ' .. s:move_up .. '          move up',
-                \     props: [#{col: 8, length: 1, type: 'ninja_title'}]},
-                \   #{text: '    ' .. shoot_text .. '       shoot',
-                \     props: [#{col: 5, length: 6, type: 'ninja_title'}]},
+                \   s:NoProp('  For movement the first player (the black one) uses the keys'),
+                \   s:NoProp('  that are on the left side of ''|'' and the second player (gray) uses the rest:'),
+                \   #{text: '   ' .. move_right_text .. '        |   ' .. s:move_right_p2 .. '   move right',
+                \     props: [#{col: 4, length: 1, type: 'ninja_title'}, #{col: 17, length: 1, type: 'ninja_title'}]},
+                \   #{text: '   ' .. move_left_text .. '        |   ' .. s:move_left_p2 .. '   move left',
+                \     props: [#{col: 4, length: 1, type: 'ninja_title'}, #{col: 17, length: 1, type: 'ninja_title'}]},
+                \   #{text: '   ' .. move_up_text .. '        |   ' .. s:move_up_p2 .. '   move up',
+                \     props: [#{col: 4, length: 1, type: 'ninja_title'}, #{col: 17, length: 1, type: 'ninja_title'}]},
+                \   #{text: '   ' .. s:move_down_p1 .. '   |   ' .. s:move_down_p2 .. '   move down',
+                \     props: [#{col: 4, length: 6, type: 'ninja_title'}, #{col: 17, length: 1, type: 'ninja_title'}]},
+                \   #{text: '   ' .. s:shoot_p1 .. '        |   ' .. s:shoot_p2 .. '   shoot',
+                \     props: [#{col: 4, length: 1, type: 'ninja_title'}, #{col: 17, length: 1, type: 'ninja_title'}]},
                 \   s:NoProp('  To shoot in a direction just look at that direction.'),
                 \   s:NoProp(''),
                 \   #{text: ' To start the game press   ' .. s:start .. '   or press    ' .. s:quit .. '   to leave. ',
-                \     props: [#{col: 27, length: 1, type: 'ninja_title'},
-                \             #{col: 43, length: 1, type: 'ninja_title'}]},
+                \     props: [#{col: 28, length: 1, type: 'ninja_title'},
+                \             #{col: 44, length: 1, type: 'ninja_title'}]},
                 \ ], #{
                 \   filter: function('s:IntroFilter'),
                 \   callback: function('s:Clear'),
@@ -187,7 +205,7 @@ func s:StartGame()
     call s:Clear()
     let s:ninja_id = popup_create(s:ninja_sprites[0], #{
                 \ line: &lines / 2,
-                \ highlight: 'NinjaBody',
+                \ highlight: 'NinjaBody1',
                 \ filter: function('s:HandleInput'),
                 \ zindex: s:ninja_zindex,
                 \ mapping: 0
@@ -346,7 +364,7 @@ func s:FireShuriken(line, col)
     let shuriken_id = popup_create(s:shuriken, #{
                 \ col: spawn_col,
                 \ line: spawn_line,
-                \ highlight: 'NinjaShuriken',
+                \ highlight: 'NinjaShuriken1',
                 \ zindex: s:shuriken_zindex,
                 \ })
     call s:MoveShuriken(0, shuriken_id, s:last_facing)

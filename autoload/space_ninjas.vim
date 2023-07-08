@@ -149,16 +149,16 @@ func s:Intro()
                 \   s:NoProp(''),
                 \   s:NoProp('  To play you need to move and shoot...'),
                 \   s:NoProp('  For movement the first player (the black one) uses the keys'),
-                \   s:NoProp('  that are on the left side of ''|'' and the second player (gray) uses the rest:'),
-                \   #{text: '   ' .. move_right_text .. '        |   ' .. s:move_right_p2 .. '   move right',
+                \   s:NoProp('  that are on the right side of ''|'' and the second player (gray) uses the left side:'),
+                \   #{text: '   ' .. s:move_right_p2 .. '        |   ' .. move_right_text .. '   move right',
                 \     props: [#{col: 4, length: 1, type: 'ninja_title'}, #{col: 17, length: 1, type: 'ninja_title'}]},
-                \   #{text: '   ' .. move_left_text .. '        |   ' .. s:move_left_p2 .. '   move left',
+                \   #{text: '   ' .. s:move_left_p2 .. '        |   ' .. move_left_text .. '   move left',
                 \     props: [#{col: 4, length: 1, type: 'ninja_title'}, #{col: 17, length: 1, type: 'ninja_title'}]},
-                \   #{text: '   ' .. move_up_text .. '        |   ' .. s:move_up_p2 .. '   move up',
+                \   #{text: '   ' .. s:move_up_p2 .. '        |   ' .. move_up_text .. '   move up',
                 \     props: [#{col: 4, length: 1, type: 'ninja_title'}, #{col: 17, length: 1, type: 'ninja_title'}]},
-                \   #{text: '   ' .. s:move_down_p1 .. '        |   ' .. s:move_down_p2 .. '   move down',
+                \   #{text: '   ' .. s:move_down_p2 .. '        |   ' .. s:move_down_p1 .. '   move down',
                 \     props: [#{col: 4, length: 6, type: 'ninja_title'}, #{col: 17, length: 1, type: 'ninja_title'}]},
-                \   #{text: '   ' .. s:shoot_p1 .. '        |   ' .. s:shoot_p2 .. '   shoot',
+                \   #{text: '   ' .. s:shoot_p2 .. '        |   ' .. s:shoot_p1 .. '   shoot',
                 \     props: [#{col: 4, length: 1, type: 'ninja_title'}, #{col: 17, length: 1, type: 'ninja_title'}]},
                 \   s:NoProp('  To shoot in a direction just look at that direction.'),
                 \   s:NoProp(''),
@@ -257,7 +257,6 @@ func s:QuitGame()
     echo 'Game closed! Thanks for playing!'
     sleep
     exec 'bd'
-    "exec tabclose might work better
 endfunc
 
 func s:HandleInput(id, key)
@@ -285,6 +284,8 @@ func s:PlayerKilled(id)
     if s:players_left == 0
         call timer_stopall()
         call popup_clear(1)
+        let game_overview_l1 = ''
+        let game_overview_l2 = ''
         let insult_1 = ''
         let insult_2 = ''
         let insult_1_2 = #{text: '    To play the game again press   ' .. s:start .. '   or press   ' .. s:quit .. '   to leave. ',

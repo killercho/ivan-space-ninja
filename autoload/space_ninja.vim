@@ -224,7 +224,6 @@ func s:QuitGame()
     echo 'Game closed! Thanks for playing!'
     sleep
     exec 'bd'
-    "exec tabclose might work better
 endfunc
 
 func s:HandleInput(id, key)

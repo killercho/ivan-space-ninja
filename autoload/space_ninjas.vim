@@ -50,11 +50,7 @@ const s:shoot_p2 = 'g'
 const s:quit = 'q'
 const s:start = 's'
 
-"TODO: IMPLEMENT: For coop both players are spawned and have different scores
-"and in the end the one with the higher one wins, once one player dies the
-"other can countinue
-
-"TODO: IMPLEMENT: Block other mappings
+"TODO: BUG: The arrows are not recognised as a key so player one cannot move
 
 "TODO: BUG: After quiting the game the 'q' key still remembers that it was
 "pressed
@@ -150,7 +146,17 @@ func s:NoProp(text)
     return #{text: a:text, props: []}
 endfunc
 
+func s:RemoveMappings()
+    mapclear <buffer>
+
+    for key in ['s', 'i', 'a', 'v', 'c', 'x', 'd']
+        exec 'map <buffer> ' .. key .. ' <nop>'
+        exec 'map <buffer> ' .. toupper(key) .. ' <nop>'
+    endfor
+endfunc
+
 func s:Intro()
+    call s:RemoveMappings()
     hi NinjaTitle cterm=bold gui=bold
     call prop_type_delete('ninja_title')
     call prop_type_add('ninja_title', #{highlight: 'NinjaTitle'})
@@ -286,6 +292,7 @@ func s:HandleInputNinja1(id, key)
     else
         call setwinvar(a:id, 'direction', 0)
     endif
+    return 1
 endfunc
 
 func s:HandleInputNinja2(id, key)
@@ -300,6 +307,7 @@ func s:HandleInputNinja2(id, key)
     else
         call setwinvar(a:id, 'direction', 0)
     endif
+    return 1
 endfunc
 
 func s:PlayerKilled(id)
@@ -314,14 +322,14 @@ func s:PlayerKilled(id)
         if s:score_1 < s:low_score && s:score_2 < s:low_score
             let insult_1_2 = #{text: 'Damn you are both trash. Make the robots a favour and don''t come back...', props: []}
                 elseif s:score_1 < s:low_score
-            let insult_1 = 'WOW you realy struggled out there. It''s good that you had a buddy.'
+            let insult_1 = 'WOW you realy struggled out there player ONE. It''s good that you had a buddy.'
                 elseif s:score_2 < s:low_score
-                    let insult_2 = 'It''s good that you are player 2 and not player 1 since you can''t be the main character.'
+                    let insult_2 = 'It''s good that you are player TWO and not player ONE since you can''t be the main character.'
                 endif
                 if s:score_1 - s:score_2 < s:low_difference_score
                     let game_overview_l1 = 'The game was closer than expected.'
                     let game_overview_l2 = 'Go on try it again. Resolve the dispute'
-                    if insult_1_2 != #{text: 'Damn you are both trash. Make the robots a favour and don''t come back...', props: []}
+                    if insult_1_2 == #{text: 'Damn you are both trash. Make the robots a favour and don''t come back...', props: []}
                             let game_overview_l2 = 'Maybe it will be best if you both just leave gaming for now...'
                     endif
                 endif

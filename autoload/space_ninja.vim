@@ -42,8 +42,6 @@ const s:shoot = ' '
 const s:quit = 'q'
 const s:start = 's'
 
-"TODO: IMPLEMENT: Block other mappings
-
 "TODO: BUG: After quiting the game the 'q' key still remembers that it was
 "pressed
 

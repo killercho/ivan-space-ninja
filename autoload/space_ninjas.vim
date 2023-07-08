@@ -34,12 +34,6 @@ const s:low_score = 300
 const s:low_difference_score = 60
 
 "Binds player 1
-"const s:move_left_p1 = 'left'
-"const s:move_right_p1 = 'right'
-"const s:move_up_p1 = 'up'
-"const s:move_down_p1 = 'down'
-"const s:shoot_p1 = 'l'
-
 const s:move_left_p1 = 'l'
 const s:move_right_p1 = ''''
 const s:move_up_p1 = 'p'
@@ -55,8 +49,6 @@ const s:shoot_p2 = 'g'
 
 const s:quit = 'q'
 const s:start = 's'
-
-"TODO: BUG: The arrows are not recognised as a key so player one cannot move
 
 "TODO: BUG: After quiting the game the 'q' key still remembers that it was
 "pressed
@@ -152,22 +144,12 @@ func s:NoProp(text)
     return #{text: a:text, props: []}
 endfunc
 
-func s:RemoveMappings()
-    mapclear <buffer>
-
-    for key in ['s', 'i', 'a', 'v', 'c', 'x', 'd']
-        exec 'map <buffer> ' .. key .. ' <nop>'
-        exec 'map <buffer> ' .. toupper(key) .. ' <nop>'
-    endfor
-endfunc
-
 func s:Intro()
-    call s:RemoveMappings()
     hi NinjaTitle cterm=bold gui=bold
     call prop_type_delete('ninja_title')
     call prop_type_add('ninja_title', #{highlight: 'NinjaTitle'})
         let move_right_text = s:move_right_p1 == '<right>' ? '>' : s:move_right_p1
-    let move_left_text = s:move_left_p1 == '<left>' ? '<' : s:move_up_p1
+    let move_left_text = s:move_left_p1 == '<left>' ? '<' : s:move_left_p1
     let move_up_text = s:move_up_p1 == '<up>' ? '^' : s:move_up_p1
     let s:intro_popup = popup_create([
                 \   #{text: '       The robots are coming to get you Ivans!',
@@ -182,7 +164,7 @@ func s:Intro()
                 \     props: [#{col: 4, length: 1, type: 'ninja_title'}, #{col: 17, length: 1, type: 'ninja_title'}]},
                 \   #{text: '   ' .. move_up_text .. '        |   ' .. s:move_up_p2 .. '   move up',
                 \     props: [#{col: 4, length: 1, type: 'ninja_title'}, #{col: 17, length: 1, type: 'ninja_title'}]},
-                \   #{text: '   ' .. s:move_down_p1 .. '   |   ' .. s:move_down_p2 .. '   move down',
+                \   #{text: '   ' .. s:move_down_p1 .. '        |   ' .. s:move_down_p2 .. '   move down',
                 \     props: [#{col: 4, length: 6, type: 'ninja_title'}, #{col: 17, length: 1, type: 'ninja_title'}]},
                 \   #{text: '   ' .. s:shoot_p1 .. '        |   ' .. s:shoot_p2 .. '   shoot',
                 \     props: [#{col: 4, length: 1, type: 'ninja_title'}, #{col: 17, length: 1, type: 'ninja_title'}]},
@@ -219,7 +201,7 @@ func s:StartGame()
                 \ line: &lines / 2,
                 \ col: &columns / 2 + 6,
                 \ highlight: 'NinjaBody1',
-                \ filter: function('s:HandleInputNinja1'),
+                \ filter: function('s:HandleInput'),
                 \ zindex: s:ninja_zindex,
                 \ mapping: 0
                 \ })
@@ -227,7 +209,7 @@ func s:StartGame()
                 \ line: &lines / 2,
                 \ col: &columns / 2 - 6,
                 \ highlight: 'NinjaBody2',
-                \ filter: function('s:HandleInputNinja2'),
+                \ filter: function('s:HandleInput'),
                 \ zindex: s:ninja_zindex,
                 \ mapping: 0
                 \ })
@@ -286,32 +268,21 @@ func s:QuitGame()
     "exec tabclose might work better
 endfunc
 
-func s:HandleInputNinja1(id, key)
+func s:HandleInput(id, key)
     if a:key == s:move_up_p1 ||
                 \ a:key == s:move_down_p1 ||
                 \ a:key == s:move_right_p1 ||
                 \ a:key == s:move_left_p1 ||
                 \ a:key == s:shoot_p1
-        call s:MoveNinja1(a:id, a:key)
-    elseif a:key == s:quit || a:key == toupper(s:quit)
-        call s:QuitGame()
-    else
-        call setwinvar(a:id, 'direction', 0)
-    endif
-    return 1
-endfunc
-
-func s:HandleInputNinja2(id, key)
-    if a:key == s:move_up_p2 ||
+        call s:MoveNinja1(s:ninja_1_id, a:key)
+    elseif a:key == s:move_up_p2 ||
                 \ a:key == s:move_down_p2 ||
                 \ a:key == s:move_right_p2 ||
                 \ a:key == s:move_left_p2 ||
                 \ a:key == s:shoot_p2
-        call s:MoveNinja2(a:id, a:key)
+        call s:MoveNinja2(s:ninja_2_id, a:key)
     elseif a:key == s:quit || a:key == toupper(s:quit)
         call s:QuitGame()
-    else
-        call setwinvar(a:id, 'direction', 0)
     endif
     return 1
 endfunc

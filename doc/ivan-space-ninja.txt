@@ -1,4 +1,4 @@
-*ninja-help.txt*       Play a recreation of the minigame 'Journey of the Prairie King' in vim.
+*ivan-space-ninja.txt*       Play a recreation of the minigame 'Journey of the Prairie King' in vim.
 
 NINJA REFERENCE MANUAL
 
@@ -80,7 +80,7 @@ Additionally the characters can shoot out a shuriken with <l> for character 1 an
 <v> for character 2.
 
 ==============================================================================================
-Additional notes                                                        *multiplayer-controls*
+Additional notes                                                        *notes*
 
 Just remember to have fun.
 For those that are still trying to find more stuff about the game i can tell

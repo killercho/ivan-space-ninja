@@ -293,6 +293,9 @@ endfunc
 func s:MoveNinja(id, key)
     "Function responsible for moving the player
     let pos = popup_getpos(a:id)
+    if empty(pos)
+        return
+    endif
     let move_col = pos.col
     let move_line = pos.line
     let left_anim = 0
